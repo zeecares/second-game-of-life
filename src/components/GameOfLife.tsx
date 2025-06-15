@@ -253,6 +253,7 @@ export const GameOfLife = () => {
   const [draggedPattern, setDraggedPattern] = useState<string | null>(null);
   const [rules, setRules] = useState<Rules>(defaultRules);
   const [audioEnabled, setAudioEnabled] = useState(false);
+  const [soundStyle, setSoundStyle] = useState<'chiptune' | '8bit' | 'piano' | 'trap'>('chiptune');
   const [particlesEnabled, setParticlesEnabled] = useState(true);
   const intervalRef = useRef<NodeJS.Timeout>();
   const drumSoundsRef = useRef<ReturnType<typeof createDrumSounds> | null>(null);
@@ -263,7 +264,8 @@ export const GameOfLife = () => {
     grid,
     isRunning,
     speed[0],
-    audioEnabled
+    audioEnabled,
+    soundStyle
   );
 
   // Particle system hook
@@ -593,6 +595,22 @@ export const GameOfLife = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Sound Style</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['chiptune', '8bit', 'piano', 'trap'] as const).map((style) => (
+                    <Button
+                      key={style}
+                      onClick={() => setSoundStyle(style)}
+                      variant={soundStyle === style ? "default" : "outline"}
+                      size="sm"
+                      className="text-xs"
+                    >
+                      {style === '8bit' ? '8-Bit' : style.charAt(0).toUpperCase() + style.slice(1)}
+                    </Button>
+                  ))}
+                </div>
+              </div>
               <div className="text-xs text-muted-foreground space-y-1">
                 <div className="flex justify-between">
                   <span>Active Column:</span>

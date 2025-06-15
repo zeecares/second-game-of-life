@@ -20,7 +20,8 @@ export const useChiptuneSequencer = (
   grid: Grid,
   isRunning: boolean,
   speed: number,
-  audioEnabled: boolean
+  audioEnabled: boolean,
+  soundStyle: 'chiptune' | '8bit' | 'piano' | 'trap' = 'chiptune'
 ) => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const currentColumnRef = useRef(0);
@@ -37,28 +38,70 @@ export const useChiptuneSequencer = (
     }
   }, [audioEnabled]);
 
-  // Create chiptune note sound
-  const playChiptuneNote = useCallback((frequency: number, duration: number = 0.1) => {
+  // Create note sound with different styles
+  const playNote = useCallback((frequency: number, duration: number = 0.15) => {
     if (!audioContextRef.current || !audioEnabled) return;
 
     const oscillator = audioContextRef.current.createOscillator();
     const gainNode = audioContextRef.current.createGain();
+    const filterNode = audioContextRef.current.createBiquadFilter();
     
-    oscillator.connect(gainNode);
+    oscillator.connect(filterNode);
+    filterNode.connect(gainNode);
     gainNode.connect(audioContextRef.current.destination);
     
-    // Square wave for chiptune sound
-    oscillator.type = 'square';
+    switch (soundStyle) {
+      case 'chiptune':
+        oscillator.type = 'square';
+        gainNode.gain.setValueAtTime(0, audioContextRef.current.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.3, audioContextRef.current.currentTime + 0.01);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current.currentTime + duration);
+        break;
+        
+      case '8bit':
+        oscillator.type = 'triangle';
+        filterNode.type = 'lowpass';
+        filterNode.frequency.setValueAtTime(800, audioContextRef.current.currentTime);
+        gainNode.gain.setValueAtTime(0, audioContextRef.current.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.4, audioContextRef.current.currentTime + 0.005);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current.currentTime + duration * 0.8);
+        break;
+        
+      case 'piano':
+        oscillator.type = 'sine';
+        const harmonic = audioContextRef.current.createOscillator();
+        const harmonicGain = audioContextRef.current.createGain();
+        harmonic.connect(harmonicGain);
+        harmonicGain.connect(gainNode);
+        
+        harmonic.frequency.setValueAtTime(frequency * 2, audioContextRef.current.currentTime);
+        harmonic.type = 'sine';
+        harmonicGain.gain.setValueAtTime(0.1, audioContextRef.current.currentTime);
+        
+        gainNode.gain.setValueAtTime(0, audioContextRef.current.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.5, audioContextRef.current.currentTime + 0.02);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current.currentTime + duration * 2);
+        
+        harmonic.start(audioContextRef.current.currentTime);
+        harmonic.stop(audioContextRef.current.currentTime + duration * 2);
+        break;
+        
+      case 'trap':
+        oscillator.type = 'sawtooth';
+        filterNode.type = 'lowpass';
+        filterNode.frequency.setValueAtTime(1200, audioContextRef.current.currentTime);
+        filterNode.Q.setValueAtTime(8, audioContextRef.current.currentTime);
+        
+        gainNode.gain.setValueAtTime(0, audioContextRef.current.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.6, audioContextRef.current.currentTime + 0.008);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current.currentTime + duration * 0.6);
+        break;
+    }
+    
     oscillator.frequency.setValueAtTime(frequency, audioContextRef.current.currentTime);
-    
-    // Quick attack and decay for chiptune effect
-    gainNode.gain.setValueAtTime(0, audioContextRef.current.currentTime);
-    gainNode.gain.linearRampToValueAtTime(0.3, audioContextRef.current.currentTime + 0.01);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current.currentTime + duration);
-    
     oscillator.start(audioContextRef.current.currentTime);
-    oscillator.stop(audioContextRef.current.currentTime + duration);
-  }, [audioEnabled]);
+    oscillator.stop(audioContextRef.current.currentTime + duration * (soundStyle === 'piano' ? 2 : 1));
+  }, [audioEnabled, soundStyle]);
 
   // Process current column for notes
   const processSequencerStep = useCallback(() => {
@@ -73,13 +116,13 @@ export const useChiptuneSequencer = (
         // Map row to a note in the pentatonic scale
         const noteIndex = row % PENTATONIC_SCALE.length;
         const frequency = PENTATONIC_SCALE[noteIndex];
-        playChiptuneNote(frequency, 0.15);
+        playNote(frequency, 0.15);
       }
     }
 
     // Move to next column
     currentColumnRef.current = (currentColumnRef.current + 1) % gridSize;
-  }, [grid, audioEnabled, isRunning, playChiptuneNote]);
+  }, [grid, audioEnabled, isRunning, playNote]);
 
   // Start/stop sequencer
   useEffect(() => {
