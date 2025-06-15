@@ -608,12 +608,6 @@ export const GameOfLife = () => {
                   </p>
                 </div>
 
-                {/* Pattern Analysis */}
-                <PatternMetrics 
-                  metrics={metrics}
-                  historicalMatches={historicalMatches}
-                  history={history}
-                />
               </div>
             </CardContent>
           </Card>
@@ -720,6 +714,26 @@ export const GameOfLife = () => {
 
         </div>
       </div>
+
+      {/* Pattern Analysis Panel */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Brain className="h-5 w-5" />
+            Pattern Analysis & AI Insights
+          </CardTitle>
+          <CardDescription>
+            Real-time analysis of complexity, pattern recognition, and AI predictions
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PatternMetrics 
+            metrics={metrics}
+            historicalMatches={historicalMatches}
+            history={history}
+          />
+        </CardContent>
+      </Card>
 
       {/* Rules */}
       <Card>
