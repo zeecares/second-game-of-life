@@ -10,7 +10,8 @@ import { usePatternSharing } from '@/hooks/usePatternSharing';
 import { PatternMetrics } from '@/components/PatternMetrics';
 import { HeatMapOverlay } from '@/components/HeatMapOverlay';
 import { ShareModal } from '@/components/ShareModal';
-
+import { Grid3D } from '@/components/Grid3D';
+import { EvolutionCompetition } from '@/components/EvolutionCompetition';
 
 const DEFAULT_GRID_SIZE = 25;
 
@@ -262,6 +263,7 @@ export const GameOfLife = () => {
   const [soundStyle, setSoundStyle] = useState<'chiptune' | '8bit' | 'piano' | 'trap'>('chiptune');
   const [heatMapEnabled, setHeatMapEnabled] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [view3D, setView3D] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout>();
   const drumSoundsRef = useRef<ReturnType<typeof createDrumSounds> | null>(null);
 
@@ -484,49 +486,68 @@ export const GameOfLife = () => {
                </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex justify-center mb-4 relative">
-                <div 
-                  className="grid gap-[1px] bg-border p-2 rounded-lg"
-                  style={{ 
-                    gridTemplateColumns: `repeat(${gridSize}, 8px)`,
-                    gridTemplateRows: `repeat(${gridSize}, 8px)`,
-                    width: 'fit-content'
-                  }}
-                  onDragOver={handleDragOver}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const x = Math.floor((e.clientY - rect.top - 8) / 9);
-                    const y = Math.floor((e.clientX - rect.left - 8) / 9);
-                    dropPattern(x, y);
-                  }}
+              <div className="mb-4 flex justify-center">
+                <Button
+                  onClick={() => setView3D(!view3D)}
+                  variant="outline"
+                  className="flex items-center gap-2"
                 >
-                   {grid.map((row, x) =>
-                     row.map((cell, y) => (
-                       <div
-                         key={`${x}-${y}`}
-                         className={`w-2 h-2 cursor-pointer transition-colors ${
-                           cell 
-                             ? 'bg-primary hover:bg-primary/80' 
-                             : 'bg-background hover:bg-muted border border-border/20'
-                         } ${
-                           isSequencerActive && y === currentColumn
-                             ? 'ring-2 ring-accent ring-offset-1'
-                             : ''
-                         }`}
-                         onClick={() => toggleCell(x, y)}
-                       />
-                     ))
-                   )}
-                  </div>
-                  <HeatMapOverlay
-                    influence={metrics.influence}
-                    gridSize={gridSize}
-                    cellSize={8}
-                    enabled={heatMapEnabled}
-                  />
-                </div>
+                  <Zap className="h-4 w-4" />
+                  {view3D ? '2D View' : '3D View'}
+                </Button>
+              </div>
 
+              {view3D ? (
+                <Grid3D 
+                  grid={grid} 
+                  gridSize={gridSize} 
+                  isRunning={isRunning} 
+                  generation={generation} 
+                />
+              ) : (
+                <div className="flex justify-center mb-4 relative">
+                  <div 
+                    className="grid gap-[1px] bg-border p-2 rounded-lg"
+                    style={{ 
+                      gridTemplateColumns: `repeat(${gridSize}, 8px)`,
+                      gridTemplateRows: `repeat(${gridSize}, 8px)`,
+                      width: 'fit-content'
+                    }}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const x = Math.floor((e.clientY - rect.top - 8) / 9);
+                      const y = Math.floor((e.clientX - rect.left - 8) / 9);
+                      dropPattern(x, y);
+                    }}
+                  >
+                     {grid.map((row, x) =>
+                       row.map((cell, y) => (
+                         <div
+                           key={`${x}-${y}`}
+                           className={`w-2 h-2 cursor-pointer transition-colors ${
+                             cell 
+                               ? 'bg-primary hover:bg-primary/80' 
+                               : 'bg-background hover:bg-muted border border-border/20'
+                           } ${
+                             isSequencerActive && y === currentColumn
+                               ? 'ring-2 ring-accent ring-offset-1'
+                               : ''
+                           }`}
+                           onClick={() => toggleCell(x, y)}
+                         />
+                       ))
+                     )}
+                    <HeatMapOverlay
+                      influence={metrics.influence}
+                      gridSize={gridSize}
+                      cellSize={8}
+                      enabled={heatMapEnabled}
+                    />
+                  </div>
+              )}
+              
               <div className="flex flex-wrap gap-2 justify-center mb-4">
                 <Button
                   onClick={() => setIsRunning(!isRunning)}
@@ -714,6 +735,9 @@ export const GameOfLife = () => {
 
         </div>
       </div>
+
+      {/* Evolution Competition */}
+      <EvolutionCompetition />
 
       {/* Pattern Analysis Panel */}
       <Card>
