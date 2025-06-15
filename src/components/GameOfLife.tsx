@@ -3,8 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
-import { Play, Pause, RotateCcw, Zap, Brain, MessageSquare, Volume2, VolumeX, Music } from 'lucide-react';
+import { Play, Pause, RotateCcw, Zap, Brain, MessageSquare, Volume2, VolumeX, Music, Sparkles } from 'lucide-react';
 import { useChiptuneSequencer } from '@/hooks/useChiptuneSequencer';
+import { useParticleSystem } from '@/hooks/useParticleSystem';
 
 const GRID_SIZE = 50;
 
@@ -252,8 +253,10 @@ export const GameOfLife = () => {
   const [draggedPattern, setDraggedPattern] = useState<string | null>(null);
   const [rules, setRules] = useState<Rules>(defaultRules);
   const [audioEnabled, setAudioEnabled] = useState(false);
+  const [particlesEnabled, setParticlesEnabled] = useState(true);
   const intervalRef = useRef<NodeJS.Timeout>();
   const drumSoundsRef = useRef<ReturnType<typeof createDrumSounds> | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Chiptune sequencer hook
   const { currentColumn, isSequencerActive } = useChiptuneSequencer(
@@ -263,11 +266,30 @@ export const GameOfLife = () => {
     audioEnabled
   );
 
+  // Particle system hook
+  const { createBirthParticles, createDeathParticles, clearParticles } = useParticleSystem(canvasRef);
+
   const runSimulation = useCallback(() => {
     if (!isRunning) return;
     
     setGrid(currentGrid => {
       const newGrid = getNextGeneration(currentGrid, rules);
+      
+      // Particle effects: detect births and deaths
+      if (particlesEnabled) {
+        for (let x = 0; x < GRID_SIZE; x++) {
+          for (let y = 0; y < GRID_SIZE; y++) {
+            // Cell birth - was dead, now alive
+            if (!currentGrid[x][y] && newGrid[x][y]) {
+              createBirthParticles(y * 9, x * 9); // Convert grid coords to pixel coords
+            }
+            // Cell death - was alive, now dead  
+            if (currentGrid[x][y] && !newGrid[x][y]) {
+              createDeathParticles(y * 9, x * 9);
+            }
+          }
+        }
+      }
       
       // Drum machine: trigger sounds based on grid patterns
       if (audioEnabled && drumSoundsRef.current) {
@@ -296,7 +318,7 @@ export const GameOfLife = () => {
       return newGrid;
     });
     setGeneration(gen => gen + 1);
-  }, [isRunning, rules, audioEnabled]);
+  }, [isRunning, rules, audioEnabled, particlesEnabled, createBirthParticles, createDeathParticles]);
 
   // Initialize audio context when enabled
   useEffect(() => {
@@ -442,7 +464,7 @@ export const GameOfLife = () => {
                </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex justify-center mb-4">
+              <div className="flex justify-center mb-4 relative">
                 <div 
                   className="grid gap-[1px] bg-border p-2 rounded-lg"
                   style={{ 
@@ -477,6 +499,14 @@ export const GameOfLife = () => {
                      ))
                    )}
                 </div>
+                {/* Particle effect canvas overlay */}
+                <canvas
+                  ref={canvasRef}
+                  width={GRID_SIZE * 9 + 16}
+                  height={GRID_SIZE * 9 + 16}
+                  className="absolute top-0 left-0 pointer-events-none"
+                  style={{ opacity: particlesEnabled ? 1 : 0 }}
+                />
               </div>
 
               <div className="flex flex-wrap gap-2 justify-center">
@@ -503,6 +533,14 @@ export const GameOfLife = () => {
                 >
                   {audioEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
                   {audioEnabled ? 'Audio On' : 'Audio Off'}
+                </Button>
+                <Button
+                  onClick={() => setParticlesEnabled(!particlesEnabled)}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  {particlesEnabled ? 'Particles On' : 'Particles Off'}
                 </Button>
               </div>
 
