@@ -613,109 +613,56 @@ export const GameOfLife = () => {
         </div>
 
         {/* Controls and Info */}
-        <div className="w-64 flex-shrink-0 space-y-6">
-          {/* Stats */}
+        <div className="w-64 flex-shrink-0 space-y-4">
+          {/* Stats & Audio Controls */}
           <Card>
-            <CardHeader>
-              <CardTitle>Statistics</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Statistics & Audio</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex justify-between">
-                <span>Generation:</span>
-                <Badge variant="secondary">{generation}</Badge>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="text-center">
+                  <div className="text-xs text-muted-foreground">Generation</div>
+                  <Badge variant="secondary" className="text-xs">{generation}</Badge>
+                </div>
+                <div className="text-center">
+                  <div className="text-xs text-muted-foreground">Population</div>
+                  <Badge variant="secondary" className="text-xs">{population}</Badge>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span>Population:</span>
-                <Badge variant="secondary">{population}</Badge>
-              </div>
-            </CardContent>
-          </Card>
-
-           {/* Chiptune Sequencer */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Music className="h-5 w-5" />
-                Chiptune Sequencer
-              </CardTitle>
-              <CardDescription>
-                Each column plays chiptune notes as the sequencer moves left to right
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
+              
               <div className="space-y-2">
-                <label className="text-sm font-medium">Sound Style</label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-1">
                   {(['chiptune', '8bit', 'piano', 'trap'] as const).map((style) => (
                     <Button
                       key={style}
                       onClick={() => setSoundStyle(style)}
                       variant={soundStyle === style ? "default" : "outline"}
                       size="sm"
-                      className="text-xs"
+                      className="text-xs h-7"
                     >
                       {style === '8bit' ? '8-Bit' : style.charAt(0).toUpperCase() + style.slice(1)}
                     </Button>
                   ))}
                 </div>
-              </div>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <div className="flex justify-between">
-                  <span>Active Column:</span>
-                  <Badge variant="outline">{currentColumn + 1}</Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span>Status:</span>
-                  <Badge variant={isSequencerActive ? "default" : "secondary"}>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Col: {currentColumn + 1}</span>
+                  <Badge variant={isSequencerActive ? "default" : "secondary"} className="text-xs">
                     {isSequencerActive ? "Playing" : "Stopped"}
                   </Badge>
                 </div>
-                <p className="text-xs pt-2">
-                  Each row maps to a different note in a pentatonic scale. 
-                  Living cells trigger their assigned notes as the sequencer cursor moves across columns.
-                </p>
               </div>
             </CardContent>
           </Card>
 
-           {/* Drum Machine */}
+          {/* Custom Rules */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                {audioEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
-                Drum Machine
-              </CardTitle>
-              <CardDescription>
-                Grid patterns generate beats in real-time
-              </CardDescription>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Custom Rules</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="text-xs text-muted-foreground space-y-1">
-                <div className="flex justify-between">
-                  <span>Kick (rows 1-16):</span>
-                  <span>Every 4th cell count</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Snare (rows 17-32):</span>
-                  <span>Every 6th cell count</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Hi-hat (rows 33-50):</span>
-                  <span>Every 2nd cell count</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Custom Rules</CardTitle>
-              <CardDescription>
-                Experiment with different rules to see how they affect evolution
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Survival Range</label>
+                <label className="text-xs font-medium">Survival Range</label>
                 <div className="flex gap-2 items-center">
                   <input
                     type="number"
@@ -723,54 +670,48 @@ export const GameOfLife = () => {
                     max="8"
                     value={rules.survivalMin}
                     onChange={(e) => setRules(prev => ({ ...prev, survivalMin: parseInt(e.target.value) || 0 }))}
-                    className="w-16 px-2 py-1 text-sm border rounded"
+                    className="w-12 px-1 py-1 text-xs border rounded"
                     disabled={isRunning}
                   />
-                  <span className="text-sm">to</span>
+                  <span className="text-xs">to</span>
                   <input
                     type="number"
                     min="0"
                     max="8"
                     value={rules.survivalMax}
                     onChange={(e) => setRules(prev => ({ ...prev, survivalMax: parseInt(e.target.value) || 0 }))}
-                    className="w-16 px-2 py-1 text-sm border rounded"
+                    className="w-12 px-1 py-1 text-xs border rounded"
                     disabled={isRunning}
                   />
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Living cells survive with this many neighbors
-                </p>
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Birth Count</label>
+                <label className="text-xs font-medium">Birth Count</label>
                 <input
                   type="number"
                   min="0"
                   max="8"
                   value={rules.birthCount}
                   onChange={(e) => setRules(prev => ({ ...prev, birthCount: parseInt(e.target.value) || 0 }))}
-                  className="w-16 px-2 py-1 text-sm border rounded"
+                  className="w-12 px-1 py-1 text-xs border rounded"
                   disabled={isRunning}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Dead cells become alive with exactly this many neighbors
-                </p>
               </div>
 
               <Button
                 onClick={() => setRules(defaultRules)}
                 variant="outline"
                 size="sm"
-                className="w-full"
+                className="w-full h-7 text-xs"
                 disabled={isRunning}
               >
-                Reset to Conway's Rules
+                Reset Rules
               </Button>
             </CardContent>
-           </Card>
+          </Card>
 
-          {/* Pattern Analysis Components */}
+          {/* Pattern Analysis */}
           <PatternMetrics 
             metrics={metrics}
             historicalMatches={historicalMatches}
