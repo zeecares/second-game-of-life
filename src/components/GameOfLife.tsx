@@ -177,7 +177,7 @@ const defaultRules: Rules = {
   birthCount: 3
 };
 
-// Drum machine sounds using Web Audio API
+// Enhanced drum machine sounds using Web Audio API
 const createDrumSounds = () => {
   const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
   
@@ -190,7 +190,7 @@ const createDrumSounds = () => {
     oscillator.frequency.setValueAtTime(60, audioContext.currentTime);
     oscillator.frequency.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
     
-    gainNode.gain.setValueAtTime(1, audioContext.currentTime);
+    gainNode.gain.setValueAtTime(0.8, audioContext.currentTime);
     gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
     
     oscillator.start(audioContext.currentTime);
@@ -216,7 +216,7 @@ const createDrumSounds = () => {
     gainNode.connect(audioContext.destination);
     
     filterNode.frequency.value = 1000;
-    gainNode.gain.setValueAtTime(0.7, audioContext.currentTime);
+    gainNode.gain.setValueAtTime(0.6, audioContext.currentTime);
     gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
     
     noise.start(audioContext.currentTime);
@@ -241,7 +241,7 @@ const createDrumSounds = () => {
     gainNode.connect(audioContext.destination);
     
     filterNode.frequency.value = 8000;
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
     gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
     
     noise.start(audioContext.currentTime);
@@ -264,7 +264,9 @@ export const GameOfLife = () => {
   const [heatMapEnabled, setHeatMapEnabled] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [view3D, setView3D] = useState(false);
+  const [currentSequencerColumn, setCurrentSequencerColumn] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout>();
+  const sequencerIntervalRef = useRef<NodeJS.Timeout>();
   const drumSoundsRef = useRef<ReturnType<typeof createDrumSounds> | null>(null);
 
   // Pattern sharing hook
@@ -286,40 +288,68 @@ export const GameOfLife = () => {
     population
   );
 
+  // Drum sequencer logic - scans grid column by column
+  const processDrumSequencer = useCallback(() => {
+    if (!audioEnabled || !drumSoundsRef.current || !isRunning) return;
+
+    const column = currentSequencerColumn;
+    
+    // Divide grid into 3 sections for different drum sounds
+    const sectionSize = Math.floor(gridSize / 3);
+    
+    // Check each section of the current column
+    let kickTrigger = false;
+    let snareTrigger = false;
+    let hihatTrigger = false;
+    
+    // Top section - Kick drum
+    for (let row = 0; row < sectionSize; row++) {
+      if (grid[row] && grid[row][column]) {
+        kickTrigger = true;
+        break;
+      }
+    }
+    
+    // Middle section - Snare drum
+    for (let row = sectionSize; row < sectionSize * 2; row++) {
+      if (grid[row] && grid[row][column]) {
+        snareTrigger = true;
+        break;
+      }
+    }
+    
+    // Bottom section - Hi-hat
+    for (let row = sectionSize * 2; row < gridSize; row++) {
+      if (grid[row] && grid[row][column]) {
+        hihatTrigger = true;
+        break;
+      }
+    }
+    
+    // Trigger sounds based on cell states
+    if (kickTrigger) {
+      drumSoundsRef.current.createKick();
+    }
+    if (snareTrigger) {
+      drumSoundsRef.current.createSnare();
+    }
+    if (hihatTrigger) {
+      drumSoundsRef.current.createHiHat();
+    }
+    
+    // Move to next column
+    setCurrentSequencerColumn(prev => (prev + 1) % gridSize);
+  }, [audioEnabled, isRunning, currentSequencerColumn, grid, gridSize]);
+
   const runSimulation = useCallback(() => {
     if (!isRunning) return;
     
     setGrid(currentGrid => {
       const newGrid = getNextGeneration(currentGrid, rules, gridSize);
-      
-      // Drum machine: trigger sounds based on grid patterns
-      if (audioEnabled && drumSoundsRef.current) {
-        // Sample different regions of the grid for different drum sounds
-        const kickRegion = newGrid.slice(0, Math.floor(gridSize / 3));
-        const snareRegion = newGrid.slice(Math.floor(gridSize / 3), Math.floor(2 * gridSize / 3));
-        const hihatRegion = newGrid.slice(Math.floor(2 * gridSize / 3), gridSize);
-        
-        // Count living cells in each region
-        const kickCount = kickRegion.flat().filter(cell => cell).length;
-        const snareCount = snareRegion.flat().filter(cell => cell).length;
-        const hihatCount = hihatRegion.flat().filter(cell => cell).length;
-        
-        // Trigger sounds based on thresholds
-        if (kickCount > 8 && kickCount % 4 === 0) {
-          drumSoundsRef.current.createKick();
-        }
-        if (snareCount > 5 && snareCount % 6 === 0) {
-          drumSoundsRef.current.createSnare();
-        }
-        if (hihatCount > 3 && hihatCount % 2 === 0) {
-          drumSoundsRef.current.createHiHat();
-        }
-      }
-      
       return newGrid;
     });
     setGeneration(gen => gen + 1);
-  }, [isRunning, rules, audioEnabled, gridSize]);
+  }, [isRunning, rules, gridSize]);
 
   // Initialize audio context when enabled
   useEffect(() => {
@@ -333,6 +363,7 @@ export const GameOfLife = () => {
     }
   }, [audioEnabled]);
 
+  // Game simulation interval
   useEffect(() => {
     if (isRunning) {
       intervalRef.current = setInterval(runSimulation, speed[0]);
@@ -348,6 +379,31 @@ export const GameOfLife = () => {
       }
     };
   }, [isRunning, runSimulation, speed]);
+
+  // Drum sequencer interval - runs independently
+  useEffect(() => {
+    if (isRunning && audioEnabled) {
+      const sequencerSpeed = Math.max(speed[0] * 0.5, 100); // Faster than game speed
+      sequencerIntervalRef.current = setInterval(processDrumSequencer, sequencerSpeed);
+    } else {
+      if (sequencerIntervalRef.current) {
+        clearInterval(sequencerIntervalRef.current);
+      }
+    }
+
+    return () => {
+      if (sequencerIntervalRef.current) {
+        clearInterval(sequencerIntervalRef.current);
+      }
+    };
+  }, [isRunning, audioEnabled, speed, processDrumSequencer]);
+
+  // Reset sequencer when stopped
+  useEffect(() => {
+    if (!isRunning) {
+      setCurrentSequencerColumn(0);
+    }
+  }, [isRunning]);
 
   // Load shared pattern on mount
   useEffect(() => {
@@ -437,67 +493,34 @@ export const GameOfLife = () => {
   const cellSize = Math.floor(TOTAL_GRID_SIZE / gridSize) - 1; // Subtract 1 for gap
 
   return (
-    <div className="w-full mx-auto p-4 lg:p-6 space-y-6">
-      <div className="text-center space-y-4">
-        <h1 className="text-2xl lg:text-4xl font-bold text-foreground">Conway's Game of Life</h1>
-        <p className="text-lg lg:text-xl text-muted-foreground">
+    <div className="w-full mx-auto p-2 sm:p-4 lg:p-6 space-y-4 lg:space-y-6">
+      <div className="text-center space-y-2 lg:space-y-4">
+        <h1 className="text-xl sm:text-2xl lg:text-4xl font-bold text-foreground">Conway's Game of Life</h1>
+        <p className="text-sm sm:text-lg lg:text-xl text-muted-foreground">
           Discover how simple rules create complex behaviors - just like in AI systems
         </p>
       </div>
 
       {/* Mobile-first responsive layout */}
-      <div className="flex flex-col xl:flex-row gap-4 lg:gap-6">
-        {/* Classic Patterns Sidebar - Hidden on mobile, collapsible */}
-        <div className="w-full xl:w-60 flex-shrink-0 order-3 xl:order-1">
+      <div className="flex flex-col lg:flex-row gap-3 lg:gap-6">
+        {/* Game Grid - Always first on mobile, 75% width on desktop */}
+        <div className="w-full lg:w-[75%] order-1">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-sm lg:text-base">Classic Patterns</CardTitle>
-              <CardDescription className="text-xs lg:text-sm">
-                Drag patterns to place them on the grid
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2 lg:space-y-3 max-h-[400px] lg:max-h-[600px] overflow-y-auto">
-              <div className="grid grid-cols-2 lg:grid-cols-1 gap-2">
-                {Object.entries(presets).map(([key, preset]) => (
-                  <div key={key} className="space-y-1 lg:space-y-2">
-                    <Button
-                      onClick={() => loadPreset(key as keyof typeof presets)}
-                      variant="outline"
-                      className="w-full cursor-grab active:cursor-grabbing text-xs lg:text-sm h-8 lg:h-10"
-                      disabled={isRunning}
-                      draggable={!isRunning}
-                      onDragStart={() => handleDragStart(key)}
-                    >
-                      {preset.name}
-                    </Button>
-                    <p className="text-xs text-muted-foreground hidden lg:block">
-                      {preset.description}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Game Grid - 70% width on desktop, full width on mobile */}
-        <div className="w-full xl:w-[70%] order-1 xl:order-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg lg:text-xl">
+            <CardHeader className="p-3 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg lg:text-xl">
                 <Brain className="h-4 w-4 lg:h-5 lg:w-5" />
                 The Game Grid
               </CardTitle>
-               <CardDescription className="text-sm">
+               <CardDescription className="text-xs sm:text-sm">
                  Click cells to toggle them, or drag patterns from the sidebar to place them anywhere on the grid
                </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="mb-4 flex justify-center">
+            <CardContent className="p-3 sm:p-6">
+              <div className="mb-3 sm:mb-4 flex justify-center">
                 <Button
                   onClick={() => setView3D(!view3D)}
                   variant="outline"
-                  className="flex items-center gap-2 text-sm h-8 lg:h-10"
+                  className="flex items-center gap-2 text-xs sm:text-sm h-7 sm:h-8 lg:h-10"
                 >
                   <Zap className="h-3 w-3 lg:h-4 lg:w-4" />
                   {view3D ? '2D View' : '3D View'}
@@ -512,8 +535,8 @@ export const GameOfLife = () => {
                   generation={generation} 
                 />
               ) : (
-                <div className="flex justify-center mb-4">
-                  <div className="relative">
+                <div className="flex justify-center mb-3 sm:mb-4 overflow-x-auto">
+                  <div className="relative min-w-fit">
                     <div 
                       className="grid gap-[1px] bg-border p-2 rounded-lg"
                       style={{ 
@@ -539,8 +562,8 @@ export const GameOfLife = () => {
                                  ? 'bg-primary hover:bg-primary/80' 
                                  : 'bg-background hover:bg-muted border border-border/20'
                              } ${
-                               isSequencerActive && y === currentColumn
-                                 ? 'ring-2 ring-accent ring-offset-1'
+                               audioEnabled && isRunning && y === currentSequencerColumn
+                                 ? 'ring-2 ring-blue-400 ring-offset-1'
                                  : ''
                              }`}
                              style={{ 
@@ -563,27 +586,27 @@ export const GameOfLife = () => {
                 </div>
               )}
               
-              <div className="flex flex-wrap gap-2 justify-center mb-4">
+              <div className="flex flex-wrap gap-1 sm:gap-2 justify-center mb-3 sm:mb-4">
                 <Button
                   onClick={() => setIsRunning(!isRunning)}
                   variant={isRunning ? "destructive" : "default"}
-                  className="flex items-center gap-2 text-sm h-8 lg:h-10"
+                  className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm h-7 sm:h-8 lg:h-10 px-2 sm:px-4"
                 >
                   {isRunning ? <Pause className="h-3 w-3 lg:h-4 lg:w-4" /> : <Play className="h-3 w-3 lg:h-4 lg:w-4" />}
-                  {isRunning ? 'Pause' : 'Play'}
+                  <span className="hidden sm:inline">{isRunning ? 'Pause' : 'Play'}</span>
                 </Button>
-                <Button onClick={reset} variant="outline" className="flex items-center gap-2 text-sm h-8 lg:h-10">
+                <Button onClick={reset} variant="outline" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm h-7 sm:h-8 lg:h-10 px-2 sm:px-4">
                   <RotateCcw className="h-3 w-3 lg:h-4 lg:w-4" />
-                  Reset
+                  <span className="hidden sm:inline">Reset</span>
                 </Button>
-                <Button onClick={randomize} variant="outline" className="flex items-center gap-2 text-sm h-8 lg:h-10">
+                <Button onClick={randomize} variant="outline" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm h-7 sm:h-8 lg:h-10 px-2 sm:px-4">
                   <Zap className="h-3 w-3 lg:h-4 lg:w-4" />
-                  Random
+                  <span className="hidden sm:inline">Random</span>
                 </Button>
                   <Button
                     onClick={() => setAudioEnabled(!audioEnabled)}
                     variant="outline"
-                    className="flex items-center gap-2 text-sm h-8 lg:h-10"
+                    className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm h-7 sm:h-8 lg:h-10 px-2 sm:px-4"
                   >
                     {audioEnabled ? <Volume2 className="h-3 w-3 lg:h-4 lg:w-4" /> : <VolumeX className="h-3 w-3 lg:h-4 lg:w-4" />}
                     <span className="hidden sm:inline">{audioEnabled ? 'Audio On' : 'Audio Off'}</span>
@@ -591,7 +614,7 @@ export const GameOfLife = () => {
                    <Button
                      onClick={() => setHeatMapEnabled(!heatMapEnabled)}
                      variant="outline"
-                     className="flex items-center gap-2 text-sm h-8 lg:h-10"
+                     className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm h-7 sm:h-8 lg:h-10 px-2 sm:px-4"
                    >
                      <Thermometer className="h-3 w-3 lg:h-4 lg:w-4" />
                      <span className="hidden sm:inline">{heatMapEnabled ? 'Heat Map On' : 'Heat Map Off'}</span>
@@ -599,7 +622,7 @@ export const GameOfLife = () => {
                    <Button
                      onClick={() => setShareModalOpen(true)}
                      variant="default"
-                     className="flex items-center gap-2 text-sm h-8 lg:h-10"
+                     className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm h-7 sm:h-8 lg:h-10 px-2 sm:px-4"
                      disabled={population === 0}
                    >
                      <Share2 className="h-3 w-3 lg:h-4 lg:w-4" />
@@ -607,10 +630,10 @@ export const GameOfLife = () => {
                    </Button>
                  </div>
 
-              <div className="mt-4 space-y-4">
+              <div className="mt-3 sm:mt-4 space-y-3 sm:space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Grid Size</label>
-                  <div className="flex gap-2">
+                  <label className="text-xs sm:text-sm font-medium">Grid Size</label>
+                  <div className="flex gap-1 sm:gap-2">
                     {[15, 25, 35, 50].map((size) => (
                       <Button
                         key={size}
@@ -618,7 +641,7 @@ export const GameOfLife = () => {
                         variant={gridSize === size ? "default" : "outline"}
                         size="sm"
                         disabled={isRunning}
-                        className="text-xs h-7"
+                        className="text-xs h-6 sm:h-7 px-2 sm:px-3"
                       >
                         {size}×{size}
                       </Button>
@@ -630,7 +653,7 @@ export const GameOfLife = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Speed Control</label>
+                  <label className="text-xs sm:text-sm font-medium">Speed Control</label>
                   <Slider
                     value={speed}
                     onValueChange={setSpeed}
@@ -649,14 +672,14 @@ export const GameOfLife = () => {
           </Card>
         </div>
 
-        {/* Controls and Info - Collapsible on mobile */}
-        <div className="w-full xl:w-60 flex-shrink-0 space-y-4 order-2 xl:order-3">
+        {/* Right sidebar - Controls and Patterns */}
+        <div className="w-full lg:w-[25%] flex flex-col gap-3 lg:gap-4 order-2">
           {/* Stats & Audio Controls */}
           <Card>
-            <CardHeader className="pb-3">
+            <CardHeader className="p-3 sm:pb-3">
               <CardTitle className="text-sm lg:text-base">Statistics & Audio</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-3 p-3">
               <div className="grid grid-cols-2 gap-2">
                 <div className="text-center">
                   <div className="text-xs text-muted-foreground">Generation</div>
@@ -676,16 +699,16 @@ export const GameOfLife = () => {
                       onClick={() => setSoundStyle(style)}
                       variant={soundStyle === style ? "default" : "outline"}
                       size="sm"
-                      className="text-xs h-7"
+                      className="text-xs h-6 sm:h-7"
                     >
                       {style === '8bit' ? '8-Bit' : style.charAt(0).toUpperCase() + style.slice(1)}
                     </Button>
                   ))}
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Col: {currentColumn + 1}</span>
-                  <Badge variant={isSequencerActive ? "default" : "secondary"} className="text-xs">
-                    {isSequencerActive ? "Playing" : "Stopped"}
+                  <span>Sequencer Col: {currentSequencerColumn + 1}</span>
+                  <Badge variant={audioEnabled && isRunning ? "default" : "secondary"} className="text-xs">
+                    {audioEnabled && isRunning ? "Playing" : "Stopped"}
                   </Badge>
                 </div>
               </div>
@@ -694,10 +717,10 @@ export const GameOfLife = () => {
 
           {/* Custom Rules */}
           <Card>
-            <CardHeader className="pb-3">
+            <CardHeader className="p-3 sm:pb-3">
               <CardTitle className="text-sm lg:text-base">Custom Rules</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-3 p-3">
               <div className="space-y-2">
                 <label className="text-xs font-medium">Survival Range</label>
                 <div className="flex gap-2 items-center">
@@ -748,6 +771,36 @@ export const GameOfLife = () => {
             </CardContent>
           </Card>
 
+          {/* Classic Patterns - Collapsible on mobile */}
+          <Card>
+            <CardHeader className="p-3">
+              <CardTitle className="text-sm lg:text-base">Classic Patterns</CardTitle>
+              <CardDescription className="text-xs lg:text-sm">
+                Drag patterns to place them on the grid
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2 lg:space-y-3 max-h-[300px] lg:max-h-[400px] overflow-y-auto p-3">
+              <div className="grid grid-cols-2 lg:grid-cols-1 gap-1 sm:gap-2">
+                {Object.entries(presets).map(([key, preset]) => (
+                  <div key={key} className="space-y-1">
+                    <Button
+                      onClick={() => loadPreset(key as keyof typeof presets)}
+                      variant="outline"
+                      className="w-full cursor-grab active:cursor-grabbing text-xs h-7 sm:h-8"
+                      disabled={isRunning}
+                      draggable={!isRunning}
+                      onDragStart={() => handleDragStart(key)}
+                    >
+                      {preset.name}
+                    </Button>
+                    <p className="text-xs text-muted-foreground hidden lg:block">
+                      {preset.description}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
@@ -756,7 +809,7 @@ export const GameOfLife = () => {
 
       {/* Pattern Analysis Panel */}
       <Card>
-        <CardHeader>
+        <CardHeader className="p-3 sm:p-6">
           <CardTitle className="flex items-center gap-2">
             <Brain className="h-5 w-5" />
             Pattern Analysis & AI Insights
@@ -765,7 +818,7 @@ export const GameOfLife = () => {
             Real-time analysis of complexity, pattern recognition, and AI predictions
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 sm:p-6">
           <PatternMetrics 
             metrics={metrics}
             historicalMatches={historicalMatches}
@@ -776,13 +829,13 @@ export const GameOfLife = () => {
 
       {/* Rules */}
       <Card>
-        <CardHeader>
+        <CardHeader className="p-3 sm:p-6">
           <CardTitle>The Rules (Conway's Laws)</CardTitle>
           <CardDescription>
             These simple rules create all the complexity you see
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 sm:p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="p-4 bg-muted rounded-lg">
               <h4 className="font-semibold mb-2">Underpopulation</h4>
@@ -814,7 +867,7 @@ export const GameOfLife = () => {
 
       {/* AI Connection */}
       <Card>
-        <CardHeader>
+        <CardHeader className="p-3 sm:p-6">
           <CardTitle className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5" />
             AI Connection
@@ -823,7 +876,7 @@ export const GameOfLife = () => {
             How Conway's Game of Life relates to artificial intelligence
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 p-3 sm:p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="p-3 bg-muted rounded-lg">
               <h4 className="font-semibold mb-2">Emergence</h4>
