@@ -78,8 +78,8 @@ export const HeatMapOverlay: React.FC<HeatMapOverlayProps> = ({
       className="absolute pointer-events-none"
       style={{ 
         mixBlendMode: 'multiply',
-        top: '8px', // Match the grid padding
-        left: '8px' // Match the grid padding
+        top: '8px',
+        left: '8px'
       }}
     />
   );
