@@ -66,7 +66,7 @@ export const HeatMapOverlay: React.FC<HeatMapOverlayProps> = ({
 
   if (!enabled) return null;
 
-  // Calculate the total grid dimensions including gaps and padding
+  // Calculate the total grid dimensions including gaps
   const totalGridWidth = gridSize * (cellSize + 1);
   const totalGridHeight = gridSize * (cellSize + 1);
 
@@ -75,11 +75,9 @@ export const HeatMapOverlay: React.FC<HeatMapOverlayProps> = ({
       ref={canvasRef}
       width={totalGridWidth}
       height={totalGridHeight}
-      className="absolute pointer-events-none"
+      className="absolute top-0 left-0 pointer-events-none"
       style={{ 
-        mixBlendMode: 'multiply',
-        top: '8px',
-        left: '8px'
+        mixBlendMode: 'multiply'
       }}
     />
   );
