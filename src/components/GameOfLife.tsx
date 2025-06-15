@@ -432,8 +432,12 @@ export const GameOfLife = () => {
     setGeneration(0);
   };
 
+  // Calculate dynamic cell size to maintain consistent overall dimensions
+  const TOTAL_GRID_SIZE = 400; // Target total size in pixels
+  const cellSize = Math.floor(TOTAL_GRID_SIZE / gridSize) - 1; // Subtract 1 for gap
+
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
       <div className="text-center space-y-4">
         <h1 className="text-4xl font-bold text-foreground">Conway's Game of Life</h1>
         <p className="text-xl text-muted-foreground">
@@ -443,7 +447,7 @@ export const GameOfLife = () => {
 
       <div className="flex gap-6">
         {/* Classic Patterns Sidebar */}
-        <div className="w-64 flex-shrink-0">
+        <div className="w-56 flex-shrink-0">
           <Card>
             <CardHeader>
               <CardTitle>Classic Patterns</CardTitle>
@@ -473,8 +477,8 @@ export const GameOfLife = () => {
           </Card>
         </div>
 
-        {/* Game Grid */}
-        <div className="flex-1">
+        {/* Game Grid - Made larger */}
+        <div className="flex-1 max-w-3xl">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -510,16 +514,16 @@ export const GameOfLife = () => {
                     <div 
                       className="grid gap-[1px] bg-border p-2 rounded-lg"
                       style={{ 
-                        gridTemplateColumns: `repeat(${gridSize}, 8px)`,
-                        gridTemplateRows: `repeat(${gridSize}, 8px)`,
+                        gridTemplateColumns: `repeat(${gridSize}, ${cellSize}px)`,
+                        gridTemplateRows: `repeat(${gridSize}, ${cellSize}px)`,
                         width: 'fit-content'
                       }}
                       onDragOver={handleDragOver}
                       onDrop={(e) => {
                         e.preventDefault();
                         const rect = e.currentTarget.getBoundingClientRect();
-                        const x = Math.floor((e.clientY - rect.top - 8) / 9);
-                        const y = Math.floor((e.clientX - rect.left - 8) / 9);
+                        const x = Math.floor((e.clientY - rect.top - 8) / (cellSize + 1));
+                        const y = Math.floor((e.clientX - rect.left - 8) / (cellSize + 1));
                         dropPattern(x, y);
                       }}
                     >
@@ -527,7 +531,7 @@ export const GameOfLife = () => {
                          row.map((cell, y) => (
                            <div
                              key={`${x}-${y}`}
-                             className={`w-2 h-2 cursor-pointer transition-colors ${
+                             className={`cursor-pointer transition-colors ${
                                cell 
                                  ? 'bg-primary hover:bg-primary/80' 
                                  : 'bg-background hover:bg-muted border border-border/20'
@@ -536,6 +540,10 @@ export const GameOfLife = () => {
                                  ? 'ring-2 ring-accent ring-offset-1'
                                  : ''
                              }`}
+                             style={{ 
+                               width: `${cellSize}px`, 
+                               height: `${cellSize}px` 
+                             }}
                              onClick={() => toggleCell(x, y)}
                            />
                          ))
@@ -544,7 +552,7 @@ export const GameOfLife = () => {
                     <HeatMapOverlay
                       influence={metrics.influence}
                       gridSize={gridSize}
-                      cellSize={8}
+                      cellSize={cellSize}
                       enabled={heatMapEnabled}
                     />
                   </div>
@@ -637,8 +645,8 @@ export const GameOfLife = () => {
           </Card>
         </div>
 
-        {/* Controls and Info */}
-        <div className="w-64 flex-shrink-0 space-y-4">
+        {/* Controls and Info - Made smaller */}
+        <div className="w-56 flex-shrink-0 space-y-4">
           {/* Stats & Audio Controls */}
           <Card>
             <CardHeader className="pb-3">
