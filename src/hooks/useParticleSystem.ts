@@ -20,41 +20,52 @@ export const useParticleSystem = (canvasRef: React.RefObject<HTMLCanvasElement>)
   const animationFrameRef = useRef<number>();
 
   const createBirthParticles = useCallback((x: number, y: number) => {
-    // Ultra-minimal: single subtle particle
-    const particle: Particle = {
-      id: `birth-${Date.now()}`,
-      x: x + 4,
-      y: y + 4,
-      vx: 0,
-      vy: -0.3,
-      life: 15,
-      maxLife: 15,
-      size: 0.8,
-      color: 'hsl(200, 30%, 85%)', // Very subtle light blue
-      type: 'birth',
-      glowIntensity: 2,
-      trail: []
-    };
-    particlesRef.current.push(particle);
+    // Create 2-3 gentle particles for birth
+    const count = Math.random() < 0.7 ? 2 : 3;
+    
+    for (let i = 0; i < count; i++) {
+      const angle = (Math.PI * 2 * i) / count + Math.random() * 0.5;
+      const speed = 0.2 + Math.random() * 0.3;
+      
+      const particle: Particle = {
+        id: `birth-${Date.now()}-${i}`,
+        x: x + 4 + Math.random() * 2,
+        y: y + 4 + Math.random() * 2,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 0.1,
+        life: 20 + Math.random() * 10,
+        maxLife: 30,
+        size: 0.6 + Math.random() * 0.4,
+        color: `hsl(${160 + Math.random() * 40}, 40%, 75%)`, // Soft greens
+        type: 'birth',
+        glowIntensity: 1.5,
+        trail: []
+      };
+      particlesRef.current.push(particle);
+    }
   }, []);
 
   const createDeathParticles = useCallback((x: number, y: number) => {
-    // Ultra-minimal: single fading particle
-    const particle: Particle = {
-      id: `death-${Date.now()}`,
-      x: x + 4,
-      y: y + 4,
-      vx: 0,
-      vy: 0.2,
-      life: 12,
-      maxLife: 12,
-      size: 0.6,
-      color: 'hsl(0, 20%, 70%)', // Very subtle warm gray
-      type: 'death',
-      glowIntensity: 1,
-      trail: []
-    };
-    particlesRef.current.push(particle);
+    // Create 1-2 gentle fading particles for death
+    const count = Math.random() < 0.6 ? 1 : 2;
+    
+    for (let i = 0; i < count; i++) {
+      const particle: Particle = {
+        id: `death-${Date.now()}-${i}`,
+        x: x + 4 + Math.random() * 2,
+        y: y + 4 + Math.random() * 2,
+        vx: (Math.random() - 0.5) * 0.2,
+        vy: 0.1 + Math.random() * 0.2,
+        life: 18 + Math.random() * 8,
+        maxLife: 26,
+        size: 0.5 + Math.random() * 0.3,
+        color: `hsl(${30 + Math.random() * 20}, 25%, 65%)`, // Soft warm tones
+        type: 'death',
+        glowIntensity: 1,
+        trail: []
+      };
+      particlesRef.current.push(particle);
+    }
   }, []);
 
   const updateAndRenderParticles = useCallback(() => {
@@ -99,12 +110,25 @@ export const useParticleSystem = (canvasRef: React.RefObject<HTMLCanvasElement>)
       const alpha = particle.life / particle.maxLife;
       ctx.save();
       
-      // Ultra-minimalist rendering - pure simplicity
-      ctx.globalAlpha = alpha * 0.6;
-      ctx.shadowBlur = 0; // No glow for pure minimalism
+      // Soft minimalist rendering with subtle glow
+      ctx.globalAlpha = alpha * 0.7;
+      ctx.shadowBlur = particle.glowIntensity || 0;
+      ctx.shadowColor = particle.color;
       ctx.fillStyle = particle.color;
       
-      // Tiny simple dot
+      // Render trail first (behind particle)
+      if (particle.trail && particle.trail.length > 0) {
+        particle.trail.forEach((point, index) => {
+          const trailAlpha = point.alpha * 0.3 * (index / particle.trail!.length);
+          ctx.globalAlpha = trailAlpha;
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, particle.size * 0.5, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.globalAlpha = alpha * 0.7; // Reset for main particle
+      }
+      
+      // Main particle - soft circle
       ctx.beginPath();
       ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
       ctx.fill();
