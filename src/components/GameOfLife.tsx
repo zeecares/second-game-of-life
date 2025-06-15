@@ -34,17 +34,17 @@ const countNeighbors = (grid: Grid, x: number, y: number): number => {
   return count;
 };
 
-const getNextGeneration = (grid: Grid): Grid => {
+const getNextGeneration = (grid: Grid, rules: Rules): Grid => {
   const newGrid = createEmptyGrid();
   for (let x = 0; x < GRID_SIZE; x++) {
     for (let y = 0; y < GRID_SIZE; y++) {
       const neighbors = countNeighbors(grid, x, y);
       if (grid[x][y]) {
         // Cell is alive
-        newGrid[x][y] = neighbors === 2 || neighbors === 3;
+        newGrid[x][y] = neighbors >= rules.survivalMin && neighbors <= rules.survivalMax;
       } else {
         // Cell is dead
-        newGrid[x][y] = neighbors === 3;
+        newGrid[x][y] = neighbors === rules.birthCount;
       }
     }
   }
@@ -157,6 +157,18 @@ const presets = {
   }
 };
 
+type Rules = {
+  survivalMin: number;
+  survivalMax: number;
+  birthCount: number;
+};
+
+const defaultRules: Rules = {
+  survivalMin: 2,
+  survivalMax: 3,
+  birthCount: 3
+};
+
 export const GameOfLife = () => {
   const [grid, setGrid] = useState<Grid>(createEmptyGrid);
   const [isRunning, setIsRunning] = useState(false);
@@ -164,17 +176,18 @@ export const GameOfLife = () => {
   const [speed, setSpeed] = useState([200]);
   const [population, setPopulation] = useState(0);
   const [draggedPattern, setDraggedPattern] = useState<string | null>(null);
+  const [rules, setRules] = useState<Rules>(defaultRules);
   const intervalRef = useRef<NodeJS.Timeout>();
 
   const runSimulation = useCallback(() => {
     if (!isRunning) return;
     
     setGrid(currentGrid => {
-      const newGrid = getNextGeneration(currentGrid);
+      const newGrid = getNextGeneration(currentGrid, rules);
       return newGrid;
     });
     setGeneration(gen => gen + 1);
-  }, [isRunning]);
+  }, [isRunning, rules]);
 
   useEffect(() => {
     if (isRunning) {
@@ -397,6 +410,71 @@ export const GameOfLife = () => {
             </CardContent>
           </Card>
 
+          {/* Rules Editor */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Custom Rules</CardTitle>
+              <CardDescription>
+                Experiment with different rules to see how they affect evolution
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Survival Range</label>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="number"
+                    min="0"
+                    max="8"
+                    value={rules.survivalMin}
+                    onChange={(e) => setRules(prev => ({ ...prev, survivalMin: parseInt(e.target.value) || 0 }))}
+                    className="w-16 px-2 py-1 text-sm border rounded"
+                    disabled={isRunning}
+                  />
+                  <span className="text-sm">to</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="8"
+                    value={rules.survivalMax}
+                    onChange={(e) => setRules(prev => ({ ...prev, survivalMax: parseInt(e.target.value) || 0 }))}
+                    className="w-16 px-2 py-1 text-sm border rounded"
+                    disabled={isRunning}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Living cells survive with this many neighbors
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Birth Count</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="8"
+                  value={rules.birthCount}
+                  onChange={(e) => setRules(prev => ({ ...prev, birthCount: parseInt(e.target.value) || 0 }))}
+                  className="w-16 px-2 py-1 text-sm border rounded"
+                  disabled={isRunning}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Dead cells become alive with exactly this many neighbors
+                </p>
+              </div>
+
+              <Button
+                onClick={() => setRules(defaultRules)}
+                variant="outline"
+                size="sm"
+                className="w-full"
+                disabled={isRunning}
+              >
+                Reset to Conway's Rules
+              </Button>
+            </CardContent>
+          </Card>
+
           {/* AI Connection */}
           <Card>
             <CardHeader>
@@ -445,25 +523,25 @@ export const GameOfLife = () => {
             <div className="p-4 bg-muted rounded-lg">
               <h4 className="font-semibold mb-2">Underpopulation</h4>
               <p className="text-sm text-muted-foreground">
-                Living cell with &lt; 2 neighbors dies
+                Living cell with &lt; {rules.survivalMin} neighbors dies
               </p>
             </div>
             <div className="p-4 bg-muted rounded-lg">
               <h4 className="font-semibold mb-2">Survival</h4>
               <p className="text-sm text-muted-foreground">
-                Living cell with 2-3 neighbors survives
+                Living cell with {rules.survivalMin}-{rules.survivalMax} neighbors survives
               </p>
             </div>
             <div className="p-4 bg-muted rounded-lg">
               <h4 className="font-semibold mb-2">Overpopulation</h4>
               <p className="text-sm text-muted-foreground">
-                Living cell with &gt; 3 neighbors dies
+                Living cell with &gt; {rules.survivalMax} neighbors dies
               </p>
             </div>
             <div className="p-4 bg-muted rounded-lg">
               <h4 className="font-semibold mb-2">Reproduction</h4>
               <p className="text-sm text-muted-foreground">
-                Dead cell with exactly 3 neighbors becomes alive
+                Dead cell with exactly {rules.birthCount} neighbors becomes alive
               </p>
             </div>
           </div>
