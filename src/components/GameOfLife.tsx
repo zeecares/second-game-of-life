@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
-import { Play, Pause, RotateCcw, Zap, Brain, MessageSquare } from 'lucide-react';
+import { Play, Pause, RotateCcw, Zap, Brain, MessageSquare, Volume2, VolumeX } from 'lucide-react';
 
 const GRID_SIZE = 50;
 
@@ -169,6 +169,79 @@ const defaultRules: Rules = {
   birthCount: 3
 };
 
+// Drum machine sounds using Web Audio API
+const createDrumSounds = () => {
+  const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+  
+  const createKick = () => {
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.setValueAtTime(60, audioContext.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+    
+    gainNode.gain.setValueAtTime(1, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.5);
+  };
+  
+  const createSnare = () => {
+    const bufferSize = audioContext.sampleRate * 0.2;
+    const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+    const output = buffer.getChannelData(0);
+    
+    for (let i = 0; i < bufferSize; i++) {
+      output[i] = Math.random() * 2 - 1;
+    }
+    
+    const noise = audioContext.createBufferSource();
+    const gainNode = audioContext.createGain();
+    const filterNode = audioContext.createBiquadFilter();
+    
+    noise.buffer = buffer;
+    noise.connect(filterNode);
+    filterNode.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    filterNode.frequency.value = 1000;
+    gainNode.gain.setValueAtTime(0.7, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+    
+    noise.start(audioContext.currentTime);
+  };
+  
+  const createHiHat = () => {
+    const bufferSize = audioContext.sampleRate * 0.1;
+    const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+    const output = buffer.getChannelData(0);
+    
+    for (let i = 0; i < bufferSize; i++) {
+      output[i] = Math.random() * 2 - 1;
+    }
+    
+    const noise = audioContext.createBufferSource();
+    const gainNode = audioContext.createGain();
+    const filterNode = audioContext.createBiquadFilter();
+    
+    noise.buffer = buffer;
+    noise.connect(filterNode);
+    filterNode.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    filterNode.frequency.value = 8000;
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+    
+    noise.start(audioContext.currentTime);
+  };
+  
+  return { createKick, createSnare, createHiHat };
+};
+
 export const GameOfLife = () => {
   const [grid, setGrid] = useState<Grid>(createEmptyGrid);
   const [isRunning, setIsRunning] = useState(false);
@@ -177,17 +250,56 @@ export const GameOfLife = () => {
   const [population, setPopulation] = useState(0);
   const [draggedPattern, setDraggedPattern] = useState<string | null>(null);
   const [rules, setRules] = useState<Rules>(defaultRules);
+  const [audioEnabled, setAudioEnabled] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout>();
+  const drumSoundsRef = useRef<ReturnType<typeof createDrumSounds> | null>(null);
 
   const runSimulation = useCallback(() => {
     if (!isRunning) return;
     
     setGrid(currentGrid => {
       const newGrid = getNextGeneration(currentGrid, rules);
+      
+      // Drum machine: trigger sounds based on grid patterns
+      if (audioEnabled && drumSoundsRef.current) {
+        // Sample different regions of the grid for different drum sounds
+        const kickRegion = newGrid.slice(0, 16);
+        const snareRegion = newGrid.slice(16, 32);
+        const hihatRegion = newGrid.slice(32, GRID_SIZE);
+        
+        // Count living cells in each region
+        const kickCount = kickRegion.flat().filter(cell => cell).length;
+        const snareCount = snareRegion.flat().filter(cell => cell).length;
+        const hihatCount = hihatRegion.flat().filter(cell => cell).length;
+        
+        // Trigger sounds based on thresholds
+        if (kickCount > 8 && kickCount % 4 === 0) {
+          drumSoundsRef.current.createKick();
+        }
+        if (snareCount > 5 && snareCount % 6 === 0) {
+          drumSoundsRef.current.createSnare();
+        }
+        if (hihatCount > 3 && hihatCount % 2 === 0) {
+          drumSoundsRef.current.createHiHat();
+        }
+      }
+      
       return newGrid;
     });
     setGeneration(gen => gen + 1);
-  }, [isRunning, rules]);
+  }, [isRunning, rules, audioEnabled]);
+
+  // Initialize audio context when enabled
+  useEffect(() => {
+    if (audioEnabled && !drumSoundsRef.current) {
+      try {
+        drumSoundsRef.current = createDrumSounds();
+      } catch (error) {
+        console.warn('Audio not supported:', error);
+        setAudioEnabled(false);
+      }
+    }
+  }, [audioEnabled]);
 
   useEffect(() => {
     if (isRunning) {
@@ -371,6 +483,14 @@ export const GameOfLife = () => {
                   <Zap className="h-4 w-4" />
                   Random
                 </Button>
+                <Button
+                  onClick={() => setAudioEnabled(!audioEnabled)}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  {audioEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                  {audioEnabled ? 'Audio On' : 'Audio Off'}
+                </Button>
               </div>
 
               <div className="mt-4 space-y-2">
@@ -410,7 +530,34 @@ export const GameOfLife = () => {
             </CardContent>
           </Card>
 
-          {/* Rules Editor */}
+           {/* Drum Machine */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                {audioEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
+                Drum Machine
+              </CardTitle>
+              <CardDescription>
+                Grid patterns generate beats in real-time
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="text-xs text-muted-foreground space-y-1">
+                <div className="flex justify-between">
+                  <span>Kick (rows 1-16):</span>
+                  <span>Every 4th cell count</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Snare (rows 17-32):</span>
+                  <span>Every 6th cell count</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Hi-hat (rows 33-50):</span>
+                  <span>Every 2nd cell count</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
           <Card>
             <CardHeader>
               <CardTitle>Custom Rules</CardTitle>
