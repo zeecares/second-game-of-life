@@ -475,38 +475,6 @@ export const GameOfLife = () => {
             </CardContent>
           </Card>
 
-          {/* AI Connection */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                AI Connection
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <div className="p-3 bg-muted rounded-lg">
-                <h4 className="font-semibold mb-2">Emergence</h4>
-                <p className="text-muted-foreground">
-                  Complex patterns emerge from simple rules - just like how LLMs generate 
-                  sophisticated responses from basic mathematical operations.
-                </p>
-              </div>
-              <div className="p-3 bg-muted rounded-lg">
-                <h4 className="font-semibold mb-2">Transfer Learning</h4>
-                <p className="text-muted-foreground">
-                  Patterns like gliders "transfer" their behavior across the grid, 
-                  similar to how AI models transfer learned patterns to new contexts.
-                </p>
-              </div>
-              <div className="p-3 bg-muted rounded-lg">
-                <h4 className="font-semibold mb-2">Prompt Engineering</h4>
-                <p className="text-muted-foreground">
-                  The initial configuration is like a "prompt" - small changes can 
-                  lead to completely different evolutionary paths.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
 
@@ -544,6 +512,57 @@ export const GameOfLife = () => {
                 Dead cell with exactly {rules.birthCount} neighbors becomes alive
               </p>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* AI Connection */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5" />
+            AI Connection
+          </CardTitle>
+          <CardDescription>
+            How Conway's Game of Life relates to artificial intelligence
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-3 bg-muted rounded-lg">
+              <h4 className="font-semibold mb-2">Emergence</h4>
+              <p className="text-sm text-muted-foreground">
+                Complex patterns emerge from simple rules - just like how LLMs generate 
+                sophisticated responses from basic mathematical operations.
+              </p>
+            </div>
+            <div className="p-3 bg-muted rounded-lg">
+              <h4 className="font-semibold mb-2">Transfer Learning</h4>
+              <p className="text-sm text-muted-foreground">
+                Patterns like gliders "transfer" their behavior across the grid, 
+                similar to how AI models transfer learned patterns to new contexts.
+              </p>
+            </div>
+            <div className="p-3 bg-muted rounded-lg">
+              <h4 className="font-semibold mb-2">Prompt Engineering</h4>
+              <p className="text-sm text-muted-foreground">
+                The initial configuration is like a "prompt" - small changes can 
+                lead to completely different evolutionary paths.
+              </p>
+            </div>
+          </div>
+          
+          <div className="pt-4 border-t border-border">
+            <p className="text-sm text-muted-foreground">
+              Inspired by <a 
+                href="https://github.com/lamm-mit/LifeGPT" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-primary hover:underline font-medium"
+              >
+                LifeGPT
+              </a> - An AI system that uses Game of Life patterns to demonstrate emergent intelligence.
+            </p>
           </div>
         </CardContent>
       </Card>
