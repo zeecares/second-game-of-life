@@ -3,11 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
-import { Play, Pause, RotateCcw, Zap, Brain, MessageSquare, Volume2, VolumeX, Music, Thermometer } from 'lucide-react';
+import { Play, Pause, RotateCcw, Zap, Brain, MessageSquare, Volume2, VolumeX, Music, Thermometer, Share2 } from 'lucide-react';
 import { useChiptuneSequencer } from '@/hooks/useChiptuneSequencer';
 import { usePatternAnalysis } from '@/hooks/usePatternAnalysis';
+import { usePatternSharing } from '@/hooks/usePatternSharing';
 import { PatternMetrics } from '@/components/PatternMetrics';
 import { HeatMapOverlay } from '@/components/HeatMapOverlay';
+import { ShareModal } from '@/components/ShareModal';
 
 
 const DEFAULT_GRID_SIZE = 25;
@@ -259,8 +261,12 @@ export const GameOfLife = () => {
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [soundStyle, setSoundStyle] = useState<'chiptune' | '8bit' | 'piano' | 'trap'>('chiptune');
   const [heatMapEnabled, setHeatMapEnabled] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout>();
   const drumSoundsRef = useRef<ReturnType<typeof createDrumSounds> | null>(null);
+
+  // Pattern sharing hook
+  const { hasPattern, patternData, loadPattern } = usePatternSharing();
 
   // Chiptune sequencer hook
   const { currentColumn, isSequencerActive } = useChiptuneSequencer(
@@ -272,7 +278,7 @@ export const GameOfLife = () => {
   );
 
   // Pattern analysis hook
-  const { metrics, historicalMatches, history } = usePatternAnalysis(
+  const { metrics, historicalMatches, history, aiDescription, generatedName } = usePatternAnalysis(
     grid,
     generation,
     population
@@ -340,6 +346,18 @@ export const GameOfLife = () => {
       }
     };
   }, [isRunning, runSimulation, speed]);
+
+  // Load shared pattern on mount
+  useEffect(() => {
+    if (hasPattern && patternData) {
+      loadPattern((data) => {
+        setGridSize(data.gridSize);
+        setGrid(data.grid);
+        setGeneration(data.generation);
+        setRules(data.rules);
+      });
+    }
+  }, [hasPattern, patternData, loadPattern]);
 
   useEffect(() => {
     const count = grid.flat().filter(cell => cell).length;
@@ -534,15 +552,24 @@ export const GameOfLife = () => {
                     {audioEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
                     {audioEnabled ? 'Audio On' : 'Audio Off'}
                   </Button>
-                  <Button
-                    onClick={() => setHeatMapEnabled(!heatMapEnabled)}
-                    variant="outline"
-                    className="flex items-center gap-2"
-                  >
-                    <Thermometer className="h-4 w-4" />
-                    {heatMapEnabled ? 'Heat Map On' : 'Heat Map Off'}
-                  </Button>
-                </div>
+                   <Button
+                     onClick={() => setHeatMapEnabled(!heatMapEnabled)}
+                     variant="outline"
+                     className="flex items-center gap-2"
+                   >
+                     <Thermometer className="h-4 w-4" />
+                     {heatMapEnabled ? 'Heat Map On' : 'Heat Map Off'}
+                   </Button>
+                   <Button
+                     onClick={() => setShareModalOpen(true)}
+                     variant="default"
+                     className="flex items-center gap-2"
+                     disabled={population === 0}
+                   >
+                     <Share2 className="h-4 w-4" />
+                     Share
+                   </Button>
+                 </div>
 
               <div className="mt-4 space-y-4">
                 <div className="space-y-2">
@@ -841,6 +868,19 @@ export const GameOfLife = () => {
           </div>
         </CardContent>
       </Card>
+      
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        grid={grid}
+        gridSize={gridSize}
+        generation={generation}
+        population={population}
+        rules={rules}
+        generatedName={generatedName}
+        aiDescription={aiDescription}
+      />
     </div>
   );
 };
