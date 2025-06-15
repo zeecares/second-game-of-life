@@ -437,55 +437,58 @@ export const GameOfLife = () => {
   const cellSize = Math.floor(TOTAL_GRID_SIZE / gridSize) - 1; // Subtract 1 for gap
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
+    <div className="w-full mx-auto p-4 lg:p-6 space-y-6">
       <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold text-foreground">Conway's Game of Life</h1>
-        <p className="text-xl text-muted-foreground">
+        <h1 className="text-2xl lg:text-4xl font-bold text-foreground">Conway's Game of Life</h1>
+        <p className="text-lg lg:text-xl text-muted-foreground">
           Discover how simple rules create complex behaviors - just like in AI systems
         </p>
       </div>
 
-      <div className="flex gap-6">
-        {/* Classic Patterns Sidebar */}
-        <div className="w-56 flex-shrink-0">
+      {/* Mobile-first responsive layout */}
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+        {/* Classic Patterns Sidebar - Hidden on mobile, collapsible */}
+        <div className="w-full lg:w-56 flex-shrink-0 order-3 lg:order-1">
           <Card>
             <CardHeader>
-              <CardTitle>Classic Patterns</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-sm lg:text-base">Classic Patterns</CardTitle>
+              <CardDescription className="text-xs lg:text-sm">
                 Drag patterns to place them on the grid
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3 max-h-[600px] overflow-y-auto">
-              {Object.entries(presets).map(([key, preset]) => (
-                <div key={key} className="space-y-2">
-                  <Button
-                    onClick={() => loadPreset(key as keyof typeof presets)}
-                    variant="outline"
-                    className="w-full cursor-grab active:cursor-grabbing"
-                    disabled={isRunning}
-                    draggable={!isRunning}
-                    onDragStart={() => handleDragStart(key)}
-                  >
-                    {preset.name}
-                  </Button>
-                  <p className="text-xs text-muted-foreground">
-                    {preset.description}
-                  </p>
-                </div>
-              ))}
+            <CardContent className="space-y-2 lg:space-y-3 max-h-[400px] lg:max-h-[600px] overflow-y-auto">
+              <div className="grid grid-cols-2 lg:grid-cols-1 gap-2">
+                {Object.entries(presets).map(([key, preset]) => (
+                  <div key={key} className="space-y-1 lg:space-y-2">
+                    <Button
+                      onClick={() => loadPreset(key as keyof typeof presets)}
+                      variant="outline"
+                      className="w-full cursor-grab active:cursor-grabbing text-xs lg:text-sm h-8 lg:h-10"
+                      disabled={isRunning}
+                      draggable={!isRunning}
+                      onDragStart={() => handleDragStart(key)}
+                    >
+                      {preset.name}
+                    </Button>
+                    <p className="text-xs text-muted-foreground hidden lg:block">
+                      {preset.description}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Game Grid - Made larger */}
-        <div className="flex-1 max-w-3xl">
+        {/* Game Grid - 70% width on desktop, full width on mobile */}
+        <div className="w-full lg:w-[70%] order-1 lg:order-2">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Brain className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-lg lg:text-xl">
+                <Brain className="h-4 w-4 lg:h-5 lg:w-5" />
                 The Game Grid
               </CardTitle>
-               <CardDescription>
+               <CardDescription className="text-sm">
                  Click cells to toggle them, or drag patterns from the sidebar to place them anywhere on the grid
                </CardDescription>
             </CardHeader>
@@ -494,9 +497,9 @@ export const GameOfLife = () => {
                 <Button
                   onClick={() => setView3D(!view3D)}
                   variant="outline"
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 text-sm h-8 lg:h-10"
                 >
-                  <Zap className="h-4 w-4" />
+                  <Zap className="h-3 w-3 lg:h-4 lg:w-4" />
                   {view3D ? '2D View' : '3D View'}
                 </Button>
               </div>
@@ -563,43 +566,43 @@ export const GameOfLife = () => {
                 <Button
                   onClick={() => setIsRunning(!isRunning)}
                   variant={isRunning ? "destructive" : "default"}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 text-sm h-8 lg:h-10"
                 >
-                  {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  {isRunning ? <Pause className="h-3 w-3 lg:h-4 lg:w-4" /> : <Play className="h-3 w-3 lg:h-4 lg:w-4" />}
                   {isRunning ? 'Pause' : 'Play'}
                 </Button>
-                <Button onClick={reset} variant="outline" className="flex items-center gap-2">
-                  <RotateCcw className="h-4 w-4" />
+                <Button onClick={reset} variant="outline" className="flex items-center gap-2 text-sm h-8 lg:h-10">
+                  <RotateCcw className="h-3 w-3 lg:h-4 lg:w-4" />
                   Reset
                 </Button>
-                <Button onClick={randomize} variant="outline" className="flex items-center gap-2">
-                  <Zap className="h-4 w-4" />
+                <Button onClick={randomize} variant="outline" className="flex items-center gap-2 text-sm h-8 lg:h-10">
+                  <Zap className="h-3 w-3 lg:h-4 lg:w-4" />
                   Random
                 </Button>
                   <Button
                     onClick={() => setAudioEnabled(!audioEnabled)}
                     variant="outline"
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 text-sm h-8 lg:h-10"
                   >
-                    {audioEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-                    {audioEnabled ? 'Audio On' : 'Audio Off'}
+                    {audioEnabled ? <Volume2 className="h-3 w-3 lg:h-4 lg:w-4" /> : <VolumeX className="h-3 w-3 lg:h-4 lg:w-4" />}
+                    <span className="hidden sm:inline">{audioEnabled ? 'Audio On' : 'Audio Off'}</span>
                   </Button>
                    <Button
                      onClick={() => setHeatMapEnabled(!heatMapEnabled)}
                      variant="outline"
-                     className="flex items-center gap-2"
+                     className="flex items-center gap-2 text-sm h-8 lg:h-10"
                    >
-                     <Thermometer className="h-4 w-4" />
-                     {heatMapEnabled ? 'Heat Map On' : 'Heat Map Off'}
+                     <Thermometer className="h-3 w-3 lg:h-4 lg:w-4" />
+                     <span className="hidden sm:inline">{heatMapEnabled ? 'Heat Map On' : 'Heat Map Off'}</span>
                    </Button>
                    <Button
                      onClick={() => setShareModalOpen(true)}
                      variant="default"
-                     className="flex items-center gap-2"
+                     className="flex items-center gap-2 text-sm h-8 lg:h-10"
                      disabled={population === 0}
                    >
-                     <Share2 className="h-4 w-4" />
-                     Share
+                     <Share2 className="h-3 w-3 lg:h-4 lg:w-4" />
+                     <span className="hidden sm:inline">Share</span>
                    </Button>
                  </div>
 
@@ -614,7 +617,7 @@ export const GameOfLife = () => {
                         variant={gridSize === size ? "default" : "outline"}
                         size="sm"
                         disabled={isRunning}
-                        className="text-xs"
+                        className="text-xs h-7"
                       >
                         {size}×{size}
                       </Button>
@@ -645,12 +648,12 @@ export const GameOfLife = () => {
           </Card>
         </div>
 
-        {/* Controls and Info - Made smaller */}
-        <div className="w-56 flex-shrink-0 space-y-4">
+        {/* Controls and Info - Collapsible on mobile */}
+        <div className="w-full lg:w-56 flex-shrink-0 space-y-4 order-2 lg:order-3">
           {/* Stats & Audio Controls */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Statistics & Audio</CardTitle>
+              <CardTitle className="text-sm lg:text-base">Statistics & Audio</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-2">
@@ -691,7 +694,7 @@ export const GameOfLife = () => {
           {/* Custom Rules */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Custom Rules</CardTitle>
+              <CardTitle className="text-sm lg:text-base">Custom Rules</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="space-y-2">
