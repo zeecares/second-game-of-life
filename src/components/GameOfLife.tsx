@@ -5,7 +5,7 @@ import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { Play, Pause, RotateCcw, Zap, Brain, MessageSquare } from 'lucide-react';
 
-const GRID_SIZE = 30;
+const GRID_SIZE = 50;
 
 type Grid = boolean[][];
 
@@ -109,6 +109,51 @@ const presets = {
     name: "Lightweight Spaceship",
     description: "Travels diagonally across the grid",
     pattern: [[10, 11], [10, 14], [11, 15], [12, 11], [12, 15], [13, 12], [13, 13], [13, 14], [13, 15]]
+  },
+  pentadecathlon: {
+    name: "Pentadecathlon",
+    description: "A 15-period oscillator",
+    pattern: [[20, 23], [21, 23], [22, 22], [22, 24], [23, 23], [24, 23], [25, 23], [26, 23], [27, 22], [27, 24], [28, 23], [29, 23]]
+  },
+  diehard: {
+    name: "Diehard",
+    description: "Dies after 130 generations",
+    pattern: [[20, 25], [21, 19], [21, 20], [22, 20], [22, 24], [22, 25], [22, 26]]
+  },
+  acorn: {
+    name: "Acorn",
+    description: "Takes 5206 generations to stabilize",
+    pattern: [[20, 21], [22, 22], [23, 19], [23, 20], [23, 23], [23, 24], [23, 25]]
+  },
+  rPentomino: {
+    name: "R-Pentomino",
+    description: "Chaotic growth pattern",
+    pattern: [[24, 25], [24, 26], [25, 24], [25, 25], [26, 25]]
+  },
+  copperhead: {
+    name: "Copperhead",
+    description: "Period-12 spaceship",
+    pattern: [
+      [20, 23], [20, 26], [21, 22], [21, 27], [22, 22], [22, 27],
+      [23, 22], [23, 23], [23, 26], [23, 27], [24, 24], [24, 25]
+    ]
+  },
+  gospel: {
+    name: "Gospel Glider Gun",
+    description: "Produces gliders continuously",
+    pattern: [
+      [10, 20], [10, 21], [11, 20], [11, 21], [18, 20], [18, 21], [18, 22],
+      [19, 19], [19, 23], [20, 18], [20, 24], [21, 18], [21, 24], [22, 21],
+      [23, 19], [23, 23], [24, 20], [24, 21], [24, 22], [25, 21]
+    ]
+  },
+  weekender: {
+    name: "Weekender",
+    description: "Period-2 oscillator",
+    pattern: [
+      [15, 20], [15, 22], [16, 23], [17, 23], [18, 22], [18, 20], [18, 19],
+      [19, 19], [20, 20], [20, 21], [20, 22], [21, 19], [22, 19], [22, 20]
+    ]
   }
 };
 
@@ -118,6 +163,7 @@ export const GameOfLife = () => {
   const [generation, setGeneration] = useState(0);
   const [speed, setSpeed] = useState([200]);
   const [population, setPopulation] = useState(0);
+  const [draggedPattern, setDraggedPattern] = useState<string | null>(null);
   const intervalRef = useRef<NodeJS.Timeout>();
 
   const runSimulation = useCallback(() => {
@@ -168,6 +214,34 @@ export const GameOfLife = () => {
     setGeneration(0);
   };
 
+  const dropPattern = (x: number, y: number) => {
+    if (isRunning || !draggedPattern) return;
+    
+    const newGrid = [...grid];
+    const pattern = presets[draggedPattern as keyof typeof presets].pattern;
+    
+    pattern.forEach(([px, py]) => {
+      const newX = x + px - Math.min(...pattern.map(p => p[0]));
+      const newY = y + py - Math.min(...pattern.map(p => p[1]));
+      
+      if (newX >= 0 && newX < GRID_SIZE && newY >= 0 && newY < GRID_SIZE) {
+        newGrid[newX][newY] = true;
+      }
+    });
+    
+    setGrid(newGrid);
+    setDraggedPattern(null);
+  };
+
+  const handleDragStart = (patternKey: string) => {
+    if (isRunning) return;
+    setDraggedPattern(patternKey);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
   const reset = () => {
     setIsRunning(false);
     setGrid(createEmptyGrid());
@@ -198,9 +272,9 @@ export const GameOfLife = () => {
                 <Brain className="h-5 w-5" />
                 The Game Grid
               </CardTitle>
-              <CardDescription>
-                Click cells to toggle them, then press play to see evolution
-              </CardDescription>
+               <CardDescription>
+                 Click cells to toggle them, or drag patterns from the sidebar to place them anywhere on the grid
+               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex justify-center mb-4">
@@ -209,6 +283,14 @@ export const GameOfLife = () => {
                   style={{ 
                     gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))`,
                     width: 'fit-content'
+                  }}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const x = Math.floor((e.clientY - rect.top - 8) / 17);
+                    const y = Math.floor((e.clientX - rect.left - 8) / 17);
+                    dropPattern(x, y);
                   }}
                 >
                   {grid.map((row, x) =>
@@ -287,21 +369,23 @@ export const GameOfLife = () => {
           <Card>
             <CardHeader>
               <CardTitle>Classic Patterns</CardTitle>
-              <CardDescription>
-                Load famous patterns to see different behaviors
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {Object.entries(presets).map(([key, preset]) => (
-                <div key={key} className="space-y-2">
-                  <Button
-                    onClick={() => loadPreset(key as keyof typeof presets)}
-                    variant="outline"
-                    className="w-full"
-                    disabled={isRunning}
-                  >
-                    {preset.name}
-                  </Button>
+             <CardDescription>
+                 Click to load patterns instantly, or drag them to place anywhere on the grid
+               </CardDescription>
+             </CardHeader>
+             <CardContent className="space-y-3">
+               {Object.entries(presets).map(([key, preset]) => (
+                 <div key={key} className="space-y-2">
+                   <Button
+                     onClick={() => loadPreset(key as keyof typeof presets)}
+                     variant="outline"
+                     className="w-full cursor-grab active:cursor-grabbing"
+                     disabled={isRunning}
+                     draggable={!isRunning}
+                     onDragStart={() => handleDragStart(key)}
+                   >
+                     {preset.name}
+                   </Button>
                   <p className="text-xs text-muted-foreground">
                     {preset.description}
                   </p>
