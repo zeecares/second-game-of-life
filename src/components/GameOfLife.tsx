@@ -3,8 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
-import { Play, Pause, RotateCcw, Zap, Brain, MessageSquare, Volume2, VolumeX, Music } from 'lucide-react';
+import { Play, Pause, RotateCcw, Zap, Brain, MessageSquare, Volume2, VolumeX, Music, Sparkles } from 'lucide-react';
 import { useChiptuneSequencer } from '@/hooks/useChiptuneSequencer';
+import { useParticleSystem } from '@/hooks/useParticleSystem';
 
 const GRID_SIZE = 50;
 
@@ -253,8 +254,10 @@ export const GameOfLife = () => {
   const [rules, setRules] = useState<Rules>(defaultRules);
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [soundStyle, setSoundStyle] = useState<'chiptune' | '8bit' | 'piano' | 'trap'>('chiptune');
+  const [particlesEnabled, setParticlesEnabled] = useState(true);
   const intervalRef = useRef<NodeJS.Timeout>();
   const drumSoundsRef = useRef<ReturnType<typeof createDrumSounds> | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Chiptune sequencer hook
   const { currentColumn, isSequencerActive } = useChiptuneSequencer(
@@ -265,15 +268,59 @@ export const GameOfLife = () => {
     soundStyle
   );
 
+  // Particle system hook
+  const { createBirthParticles, createDeathParticles, clearParticles } = useParticleSystem(canvasRef);
+
   const runSimulation = useCallback(() => {
     if (!isRunning) return;
     
     setGrid(currentGrid => {
       const newGrid = getNextGeneration(currentGrid, rules);
+      
+      // Particle effects: detect births and deaths
+      if (particlesEnabled) {
+        for (let x = 0; x < GRID_SIZE; x++) {
+          for (let y = 0; y < GRID_SIZE; y++) {
+            // Cell birth - was dead, now alive
+            if (!currentGrid[x][y] && newGrid[x][y]) {
+              createBirthParticles(y * 9, x * 9); // Convert grid coords to pixel coords
+            }
+            // Cell death - was alive, now dead  
+            if (currentGrid[x][y] && !newGrid[x][y]) {
+              createDeathParticles(y * 9, x * 9);
+            }
+          }
+        }
+      }
+      
+      // Drum machine: trigger sounds based on grid patterns
+      if (audioEnabled && drumSoundsRef.current) {
+        // Sample different regions of the grid for different drum sounds
+        const kickRegion = newGrid.slice(0, 16);
+        const snareRegion = newGrid.slice(16, 32);
+        const hihatRegion = newGrid.slice(32, GRID_SIZE);
+        
+        // Count living cells in each region
+        const kickCount = kickRegion.flat().filter(cell => cell).length;
+        const snareCount = snareRegion.flat().filter(cell => cell).length;
+        const hihatCount = hihatRegion.flat().filter(cell => cell).length;
+        
+        // Trigger sounds based on thresholds
+        if (kickCount > 8 && kickCount % 4 === 0) {
+          drumSoundsRef.current.createKick();
+        }
+        if (snareCount > 5 && snareCount % 6 === 0) {
+          drumSoundsRef.current.createSnare();
+        }
+        if (hihatCount > 3 && hihatCount % 2 === 0) {
+          drumSoundsRef.current.createHiHat();
+        }
+      }
+      
       return newGrid;
     });
     setGeneration(gen => gen + 1);
-  }, [isRunning, rules]);
+  }, [isRunning, rules, audioEnabled, particlesEnabled, createBirthParticles, createDeathParticles]);
 
   // Initialize audio context when enabled
   useEffect(() => {
@@ -419,42 +466,50 @@ export const GameOfLife = () => {
                </CardDescription>
             </CardHeader>
             <CardContent>
-               <div className="flex justify-center mb-4 relative">
-                 <div 
-                   className="grid gap-[1px] bg-border p-2 rounded-lg"
-                   style={{ 
-                     gridTemplateColumns: `repeat(${GRID_SIZE}, 8px)`,
-                     gridTemplateRows: `repeat(${GRID_SIZE}, 8px)`,
-                     width: 'fit-content'
-                   }}
-                   onDragOver={handleDragOver}
-                   onDrop={(e) => {
-                     e.preventDefault();
-                     const rect = e.currentTarget.getBoundingClientRect();
-                     const x = Math.floor((e.clientY - rect.top - 8) / 9);
-                     const y = Math.floor((e.clientX - rect.left - 8) / 9);
-                     dropPattern(x, y);
-                   }}
-                 >
-                    {grid.map((row, x) =>
-                      row.map((cell, y) => (
-                        <div
-                          key={`${x}-${y}`}
-                          className={`w-2 h-2 cursor-pointer transition-colors ${
-                            cell 
-                              ? 'bg-primary hover:bg-primary/80' 
-                              : 'bg-background hover:bg-muted border border-border/20'
-                          } ${
-                            isSequencerActive && y === currentColumn
-                              ? 'ring-2 ring-accent ring-offset-1'
-                              : ''
-                          }`}
-                          onClick={() => toggleCell(x, y)}
-                        />
-                      ))
-                    )}
-                 </div>
-               </div>
+              <div className="flex justify-center mb-4 relative">
+                <div 
+                  className="grid gap-[1px] bg-border p-2 rounded-lg"
+                  style={{ 
+                    gridTemplateColumns: `repeat(${GRID_SIZE}, 8px)`,
+                    gridTemplateRows: `repeat(${GRID_SIZE}, 8px)`,
+                    width: 'fit-content'
+                  }}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const x = Math.floor((e.clientY - rect.top - 8) / 9);
+                    const y = Math.floor((e.clientX - rect.left - 8) / 9);
+                    dropPattern(x, y);
+                  }}
+                >
+                   {grid.map((row, x) =>
+                     row.map((cell, y) => (
+                       <div
+                         key={`${x}-${y}`}
+                         className={`w-2 h-2 cursor-pointer transition-colors ${
+                           cell 
+                             ? 'bg-primary hover:bg-primary/80' 
+                             : 'bg-background hover:bg-muted border border-border/20'
+                         } ${
+                           isSequencerActive && y === currentColumn
+                             ? 'ring-2 ring-accent ring-offset-1'
+                             : ''
+                         }`}
+                         onClick={() => toggleCell(x, y)}
+                       />
+                     ))
+                   )}
+                </div>
+                {/* Particle effect canvas overlay */}
+                <canvas
+                  ref={canvasRef}
+                  width={GRID_SIZE * 9 + 16}
+                  height={GRID_SIZE * 9 + 16}
+                  className="absolute top-0 left-0 pointer-events-none"
+                  style={{ opacity: particlesEnabled ? 1 : 0 }}
+                />
+              </div>
 
               <div className="flex flex-wrap gap-2 justify-center">
                 <Button
@@ -473,14 +528,22 @@ export const GameOfLife = () => {
                   <Zap className="h-4 w-4" />
                   Random
                 </Button>
-                 <Button
-                   onClick={() => setAudioEnabled(!audioEnabled)}
-                   variant="outline"
-                   className="flex items-center gap-2"
-                 >
-                   {audioEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-                   {audioEnabled ? 'Audio On' : 'Audio Off'}
-                 </Button>
+                <Button
+                  onClick={() => setAudioEnabled(!audioEnabled)}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  {audioEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                  {audioEnabled ? 'Audio On' : 'Audio Off'}
+                </Button>
+                <Button
+                  onClick={() => setParticlesEnabled(!particlesEnabled)}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  {particlesEnabled ? 'Particles On' : 'Particles Off'}
+                </Button>
               </div>
 
               <div className="mt-4 space-y-2">
@@ -567,35 +630,32 @@ export const GameOfLife = () => {
             </CardContent>
           </Card>
 
-           {/* Sound Trigger Logic */}
+           {/* Drum Machine */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 {audioEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
-                Sound Logic
+                Drum Machine
               </CardTitle>
               <CardDescription>
-                How the grid triggers audio
+                Grid patterns generate beats in real-time
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-               <div className="text-xs text-muted-foreground space-y-2">
-                 <div>
-                   <strong>Chiptune:</strong> Pure melodic sequencer with square wave chiptune sounds
-                 </div>
-                 <div>
-                   <strong>8-Bit:</strong> Super Mario style 8-bit sounds with frequency sweeps and drums every 4th beat
-                 </div>
-                 <div>
-                   <strong>Piano:</strong> Piano with harmonics - pure melody, no drums
-                 </div>
-                 <div>
-                   <strong>Trap:</strong> Heavy bass notes with 808 drums every 4th beat when cells are active
-                 </div>
-                 <div className="pt-2">
-                   Each row maps to a pentatonic scale note. Living cells trigger notes as the sequencer cursor moves left to right across columns.
-                 </div>
-               </div>
+              <div className="text-xs text-muted-foreground space-y-1">
+                <div className="flex justify-between">
+                  <span>Kick (rows 1-16):</span>
+                  <span>Every 4th cell count</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Snare (rows 17-32):</span>
+                  <span>Every 6th cell count</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Hi-hat (rows 33-50):</span>
+                  <span>Every 2nd cell count</span>
+                </div>
+              </div>
             </CardContent>
           </Card>
           <Card>
