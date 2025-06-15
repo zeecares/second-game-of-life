@@ -255,7 +255,7 @@ export const GameOfLife = () => {
   const [grid, setGrid] = useState<Grid>(() => createEmptyGrid(DEFAULT_GRID_SIZE));
   const [isRunning, setIsRunning] = useState(false);
   const [generation, setGeneration] = useState(0);
-  const [speed, setSpeed] = useState([200]);
+  const [speed, setSpeed] = useState([300]); // Changed default to middle value
   const [population, setPopulation] = useState(0);
   const [draggedPattern, setDraggedPattern] = useState<string | null>(null);
   const [rules, setRules] = useState<Rules>(defaultRules);
@@ -272,11 +272,11 @@ export const GameOfLife = () => {
   // Pattern sharing hook
   const { hasPattern, patternData, loadPattern } = usePatternSharing();
 
-  // Chiptune sequencer hook
+  // Chiptune sequencer hook - using inverted speed (higher value = faster)
   const { currentColumn, isSequencerActive } = useChiptuneSequencer(
     grid,
     isRunning,
-    speed[0],
+    600 - speed[0], // Invert speed: slider left (50) = slow (550), slider right (550) = fast (50)
     audioEnabled,
     soundStyle
   );
@@ -380,11 +380,11 @@ export const GameOfLife = () => {
     };
   }, [isRunning, runSimulation, speed]);
 
-  // Drum sequencer interval - runs independently
+  // Drum sequencer interval - synchronized with main speed, inverted
   useEffect(() => {
     if (isRunning && audioEnabled) {
-      const sequencerSpeed = Math.max(speed[0] * 0.5, 100); // Faster than game speed
-      sequencerIntervalRef.current = setInterval(processDrumSequencer, sequencerSpeed);
+      const drumSpeed = Math.max((600 - speed[0]) * 0.5, 50); // Invert and scale speed
+      sequencerIntervalRef.current = setInterval(processDrumSequencer, drumSpeed);
     } else {
       if (sequencerIntervalRef.current) {
         clearInterval(sequencerIntervalRef.current);
@@ -489,7 +489,7 @@ export const GameOfLife = () => {
   };
 
   // Calculate dynamic cell size to maintain consistent overall dimensions
-  const TOTAL_GRID_SIZE = 600; // Increased from 400 to 600 pixels for larger grid
+  const TOTAL_GRID_SIZE = 600; // Pixels for larger grid
   const cellSize = Math.floor(TOTAL_GRID_SIZE / gridSize) - 1; // Subtract 1 for gap
 
   return (
@@ -503,8 +503,8 @@ export const GameOfLife = () => {
 
       {/* Mobile-first responsive layout */}
       <div className="flex flex-col lg:flex-row gap-3 lg:gap-6">
-        {/* Game Grid - Always first on mobile, 75% width on desktop */}
-        <div className="w-full lg:w-[75%] order-1">
+        {/* Game Grid - Always first on mobile, 70% width on desktop */}
+        <div className="w-full lg:w-[70%] order-1">
           <Card>
             <CardHeader className="p-3 sm:p-6">
               <CardTitle className="flex items-center gap-2 text-base sm:text-lg lg:text-xl">
@@ -557,18 +557,25 @@ export const GameOfLife = () => {
                          row.map((cell, y) => (
                            <div
                              key={`${x}-${y}`}
-                             className={`cursor-pointer transition-colors ${
+                             className={`cursor-pointer transition-all duration-300 ${
                                cell 
                                  ? 'bg-primary hover:bg-primary/80' 
                                  : 'bg-background hover:bg-muted border border-border/20'
                              } ${
                                audioEnabled && isRunning && y === currentSequencerColumn
-                                 ? 'ring-2 ring-blue-400 ring-offset-1'
+                                 ? 'ring-4 ring-blue-400/60 ring-offset-2 shadow-lg shadow-blue-400/30 bg-gradient-to-br from-blue-400/20 to-cyan-400/20 backdrop-blur-sm border-blue-300/50'
                                  : ''
                              }`}
                              style={{ 
                                width: `${cellSize}px`, 
-                               height: `${cellSize}px` 
+                               height: `${cellSize}px`,
+                               ...(audioEnabled && isRunning && y === currentSequencerColumn ? {
+                                 background: cell 
+                                   ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.8), rgba(6, 182, 212, 0.8))'
+                                   : 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(6, 182, 212, 0.1))',
+                                 backdropFilter: 'blur(4px)',
+                                 boxShadow: '0 8px 32px rgba(59, 130, 246, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                               } : {})
                              }}
                              onClick={() => toggleCell(x, y)}
                            />
@@ -657,13 +664,13 @@ export const GameOfLife = () => {
                   <Slider
                     value={speed}
                     onValueChange={setSpeed}
-                    max={500}
+                    max={550}
                     min={50}
                     step={50}
                     className="w-full"
                   />
                   <p className="text-xs text-muted-foreground">
-                    {speed[0]}ms per generation
+                    Slower ← {Math.round((600 - speed[0]) / 10)}% → Faster
                   </p>
                 </div>
 
@@ -673,7 +680,7 @@ export const GameOfLife = () => {
         </div>
 
         {/* Right sidebar - Controls and Patterns */}
-        <div className="w-full lg:w-[25%] flex flex-col gap-3 lg:gap-4 order-2">
+        <div className="w-full lg:w-[30%] flex flex-col gap-3 lg:gap-4 order-2">
           {/* Stats & Audio Controls */}
           <Card>
             <CardHeader className="p-3 sm:pb-3">
