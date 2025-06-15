@@ -380,10 +380,10 @@ export const GameOfLife = () => {
     };
   }, [isRunning, runSimulation, speed]);
 
-  // Drum sequencer interval - synchronized with main speed, inverted
+  // Drum sequencer interval - synchronized with main speed
   useEffect(() => {
     if (isRunning && audioEnabled) {
-      const drumSpeed = Math.max((600 - speed[0]) * 0.5, 50); // Invert and scale speed
+      const drumSpeed = Math.max(speed[0] * 0.5, 25); // Scale speed for drum machine
       sequencerIntervalRef.current = setInterval(processDrumSequencer, drumSpeed);
     } else {
       if (sequencerIntervalRef.current) {
@@ -670,7 +670,7 @@ export const GameOfLife = () => {
                     className="w-full"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Slower ← {Math.round((600 - speed[0]) / 10)}% → Faster
+                    Slower ← {Math.round((speed[0] - 50) / 5)}% → Faster
                   </p>
                 </div>
 
