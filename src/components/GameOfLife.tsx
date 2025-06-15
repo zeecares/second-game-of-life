@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -506,40 +505,42 @@ export const GameOfLife = () => {
                   generation={generation} 
                 />
               ) : (
-                <div className="flex justify-center mb-4 relative">
-                  <div 
-                    className="grid gap-[1px] bg-border p-2 rounded-lg"
-                    style={{ 
-                      gridTemplateColumns: `repeat(${gridSize}, 8px)`,
-                      gridTemplateRows: `repeat(${gridSize}, 8px)`,
-                      width: 'fit-content'
-                    }}
-                    onDragOver={handleDragOver}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const x = Math.floor((e.clientY - rect.top - 8) / 9);
-                      const y = Math.floor((e.clientX - rect.left - 8) / 9);
-                      dropPattern(x, y);
-                    }}
-                  >
-                     {grid.map((row, x) =>
-                       row.map((cell, y) => (
-                         <div
-                           key={`${x}-${y}`}
-                           className={`w-2 h-2 cursor-pointer transition-colors ${
-                             cell 
-                               ? 'bg-primary hover:bg-primary/80' 
-                               : 'bg-background hover:bg-muted border border-border/20'
-                           } ${
-                             isSequencerActive && y === currentColumn
-                               ? 'ring-2 ring-accent ring-offset-1'
-                               : ''
-                           }`}
-                           onClick={() => toggleCell(x, y)}
-                         />
-                       ))
-                     )}
+                <div className="flex justify-center mb-4">
+                  <div className="relative">
+                    <div 
+                      className="grid gap-[1px] bg-border p-2 rounded-lg"
+                      style={{ 
+                        gridTemplateColumns: `repeat(${gridSize}, 8px)`,
+                        gridTemplateRows: `repeat(${gridSize}, 8px)`,
+                        width: 'fit-content'
+                      }}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const x = Math.floor((e.clientY - rect.top - 8) / 9);
+                        const y = Math.floor((e.clientX - rect.left - 8) / 9);
+                        dropPattern(x, y);
+                      }}
+                    >
+                       {grid.map((row, x) =>
+                         row.map((cell, y) => (
+                           <div
+                             key={`${x}-${y}`}
+                             className={`w-2 h-2 cursor-pointer transition-colors ${
+                               cell 
+                                 ? 'bg-primary hover:bg-primary/80' 
+                                 : 'bg-background hover:bg-muted border border-border/20'
+                             } ${
+                               isSequencerActive && y === currentColumn
+                                 ? 'ring-2 ring-accent ring-offset-1'
+                                 : ''
+                             }`}
+                             onClick={() => toggleCell(x, y)}
+                           />
+                         ))
+                       )}
+                    </div>
                     <HeatMapOverlay
                       influence={metrics.influence}
                       gridSize={gridSize}

@@ -75,9 +75,12 @@ export const HeatMapOverlay: React.FC<HeatMapOverlayProps> = ({
       ref={canvasRef}
       width={totalGridWidth}
       height={totalGridHeight}
-      className="absolute top-2 left-2 pointer-events-none"
+      className="pointer-events-none"
       style={{ 
-        mixBlendMode: 'multiply'
+        mixBlendMode: 'multiply',
+        position: 'absolute',
+        top: '8px',
+        left: '8px'
       }}
     />
   );
