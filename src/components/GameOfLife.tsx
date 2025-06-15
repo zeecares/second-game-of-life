@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
-import { Play, Pause, RotateCcw, Zap, Brain, MessageSquare, Volume2, VolumeX } from 'lucide-react';
+import { Play, Pause, RotateCcw, Zap, Brain, MessageSquare, Volume2, VolumeX, Music } from 'lucide-react';
+import { useChiptuneSequencer } from '@/hooks/useChiptuneSequencer';
 
 const GRID_SIZE = 50;
 
@@ -254,6 +255,14 @@ export const GameOfLife = () => {
   const intervalRef = useRef<NodeJS.Timeout>();
   const drumSoundsRef = useRef<ReturnType<typeof createDrumSounds> | null>(null);
 
+  // Chiptune sequencer hook
+  const { currentColumn, isSequencerActive } = useChiptuneSequencer(
+    grid,
+    isRunning,
+    speed[0],
+    audioEnabled
+  );
+
   const runSimulation = useCallback(() => {
     if (!isRunning) return;
     
@@ -450,19 +459,23 @@ export const GameOfLife = () => {
                     dropPattern(x, y);
                   }}
                 >
-                  {grid.map((row, x) =>
-                    row.map((cell, y) => (
-                      <div
-                        key={`${x}-${y}`}
-                        className={`w-2 h-2 cursor-pointer transition-colors ${
-                          cell 
-                            ? 'bg-primary hover:bg-primary/80' 
-                            : 'bg-background hover:bg-muted border border-border/20'
-                        }`}
-                        onClick={() => toggleCell(x, y)}
-                      />
-                    ))
-                  )}
+                   {grid.map((row, x) =>
+                     row.map((cell, y) => (
+                       <div
+                         key={`${x}-${y}`}
+                         className={`w-2 h-2 cursor-pointer transition-colors ${
+                           cell 
+                             ? 'bg-primary hover:bg-primary/80' 
+                             : 'bg-background hover:bg-muted border border-border/20'
+                         } ${
+                           isSequencerActive && y === currentColumn
+                             ? 'ring-2 ring-accent ring-offset-1'
+                             : ''
+                         }`}
+                         onClick={() => toggleCell(x, y)}
+                       />
+                     ))
+                   )}
                 </div>
               </div>
 
@@ -526,6 +539,37 @@ export const GameOfLife = () => {
               <div className="flex justify-between">
                 <span>Population:</span>
                 <Badge variant="secondary">{population}</Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+           {/* Chiptune Sequencer */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Music className="h-5 w-5" />
+                Chiptune Sequencer
+              </CardTitle>
+              <CardDescription>
+                Each column plays chiptune notes as the sequencer moves left to right
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="text-xs text-muted-foreground space-y-1">
+                <div className="flex justify-between">
+                  <span>Active Column:</span>
+                  <Badge variant="outline">{currentColumn + 1}</Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span>Status:</span>
+                  <Badge variant={isSequencerActive ? "default" : "secondary"}>
+                    {isSequencerActive ? "Playing" : "Stopped"}
+                  </Badge>
+                </div>
+                <p className="text-xs pt-2">
+                  Each row maps to a different note in a pentatonic scale. 
+                  Living cells trigger their assigned notes as the sequencer cursor moves across columns.
+                </p>
               </div>
             </CardContent>
           </Card>
