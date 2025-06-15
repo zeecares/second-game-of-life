@@ -6,13 +6,15 @@ interface HeatMapOverlayProps {
   gridSize: number;
   cellSize: number;
   enabled: boolean;
+  totalGridSize: number;
 }
 
 export const HeatMapOverlay: React.FC<HeatMapOverlayProps> = ({
   influence,
   gridSize,
   cellSize,
-  enabled
+  enabled,
+  totalGridSize
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -62,25 +64,24 @@ export const HeatMapOverlay: React.FC<HeatMapOverlayProps> = ({
         }
       }
     }
-  }, [influence, enabled, cellSize, gridSize]);
+  }, [influence, enabled, cellSize, gridSize, totalGridSize]);
 
   if (!enabled) return null;
 
-  // Calculate the total grid dimensions including gaps
-  const totalGridWidth = gridSize * (cellSize + 1);
-  const totalGridHeight = gridSize * (cellSize + 1);
+  // Calculate the total grid dimensions including gaps and padding
+  const totalGridWidth = totalGridSize + 16; // Add padding
+  const totalGridHeight = totalGridSize + 16; // Add padding
 
   return (
     <canvas
       ref={canvasRef}
       width={totalGridWidth}
       height={totalGridHeight}
-      className="pointer-events-none"
+      className="pointer-events-none absolute"
       style={{ 
         mixBlendMode: 'multiply',
-        position: 'absolute',
-        top: '8px',
-        left: '8px'
+        top: '0px',
+        left: '0px'
       }}
     />
   );

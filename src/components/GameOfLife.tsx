@@ -433,7 +433,7 @@ export const GameOfLife = () => {
   };
 
   // Calculate dynamic cell size to maintain consistent overall dimensions
-  const TOTAL_GRID_SIZE = 400; // Target total size in pixels
+  const TOTAL_GRID_SIZE = 600; // Increased from 400 to 600 pixels for larger grid
   const cellSize = Math.floor(TOTAL_GRID_SIZE / gridSize) - 1; // Subtract 1 for gap
 
   return (
@@ -446,9 +446,9 @@ export const GameOfLife = () => {
       </div>
 
       {/* Mobile-first responsive layout */}
-      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+      <div className="flex flex-col xl:flex-row gap-4 lg:gap-6">
         {/* Classic Patterns Sidebar - Hidden on mobile, collapsible */}
-        <div className="w-full lg:w-56 flex-shrink-0 order-3 lg:order-1">
+        <div className="w-full xl:w-60 flex-shrink-0 order-3 xl:order-1">
           <Card>
             <CardHeader>
               <CardTitle className="text-sm lg:text-base">Classic Patterns</CardTitle>
@@ -481,7 +481,7 @@ export const GameOfLife = () => {
         </div>
 
         {/* Game Grid - 70% width on desktop, full width on mobile */}
-        <div className="w-full lg:w-[70%] order-1 lg:order-2">
+        <div className="w-full xl:w-[70%] order-1 xl:order-2">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg lg:text-xl">
@@ -557,6 +557,7 @@ export const GameOfLife = () => {
                       gridSize={gridSize}
                       cellSize={cellSize}
                       enabled={heatMapEnabled}
+                      totalGridSize={TOTAL_GRID_SIZE}
                     />
                   </div>
                 </div>
@@ -649,7 +650,7 @@ export const GameOfLife = () => {
         </div>
 
         {/* Controls and Info - Collapsible on mobile */}
-        <div className="w-full lg:w-56 flex-shrink-0 space-y-4 order-2 lg:order-3">
+        <div className="w-full xl:w-60 flex-shrink-0 space-y-4 order-2 xl:order-3">
           {/* Stats & Audio Controls */}
           <Card>
             <CardHeader className="pb-3">
