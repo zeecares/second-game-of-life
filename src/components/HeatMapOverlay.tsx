@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from 'react';
 
 interface HeatMapOverlayProps {
@@ -53,8 +54,8 @@ export const HeatMapOverlay: React.FC<HeatMapOverlayProps> = ({
 
           ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
           ctx.fillRect(
-            y * (cellSize + 1) + 8, // Account for grid gap and padding
-            x * (cellSize + 1) + 8,
+            y * (cellSize + 1), // Remove the offset - align with grid cells
+            x * (cellSize + 1),
             cellSize,
             cellSize
           );
@@ -68,9 +69,9 @@ export const HeatMapOverlay: React.FC<HeatMapOverlayProps> = ({
   return (
     <canvas
       ref={canvasRef}
-      width={gridSize * (cellSize + 1) + 16}
-      height={gridSize * (cellSize + 1) + 16}
-      className="absolute top-0 left-0 pointer-events-none"
+      width={gridSize * (cellSize + 1)}
+      height={gridSize * (cellSize + 1)}
+      className="absolute top-2 left-2 pointer-events-none"
       style={{ mixBlendMode: 'multiply' }}
     />
   );
