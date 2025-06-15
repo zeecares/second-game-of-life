@@ -21,21 +21,21 @@ export const useParticleSystem = (canvasRef: React.RefObject<HTMLCanvasElement>)
 
   const createBirthParticles = useCallback((x: number, y: number) => {
     const particles: Particle[] = [];
-    // Fewer, more stylized particles for cyberpunk aesthetic
-    for (let i = 0; i < 4; i++) {
-      const angle = (i / 4) * Math.PI * 2;
+    // Minimal zen particles for smooth performance
+    for (let i = 0; i < 2; i++) {
+      const angle = (i / 2) * Math.PI * 2 + Math.random() * 0.5;
       particles.push({
         id: `birth-${Date.now()}-${i}`,
         x: x + 4,
         y: y + 4,
-        vx: Math.cos(angle) * 1.5,
-        vy: Math.sin(angle) * 1.5,
-        life: 25,
-        maxLife: 25,
-        size: 1.5,
-        color: `hsl(${180 + Math.random() * 60}, 100%, 70%)`, // Cyan to blue
+        vx: Math.cos(angle) * 0.8,
+        vy: Math.sin(angle) * 0.8,
+        life: 20,
+        maxLife: 20,
+        size: 1.2,
+        color: `hsl(${160 + Math.random() * 40}, 60%, 75%)`, // Soft teal to blue
         type: 'birth',
-        glowIntensity: 15,
+        glowIntensity: 8,
         trail: []
       });
     }
@@ -44,22 +44,22 @@ export const useParticleSystem = (canvasRef: React.RefObject<HTMLCanvasElement>)
 
   const createDeathParticles = useCallback((x: number, y: number) => {
     const particles: Particle[] = [];
-    // Create cyberpunk-style death particles
-    for (let i = 0; i < 6; i++) {
+    // Minimal zen death particles
+    for (let i = 0; i < 3; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = Math.random() * 2 + 0.5;
+      const speed = Math.random() * 1.2 + 0.3;
       particles.push({
         id: `death-${Date.now()}-${i}`,
         x: x + 4,
         y: y + 4,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
-        life: 30,
-        maxLife: 30,
-        size: Math.random() * 1.5 + 0.5,
-        color: `hsl(${Math.random() < 0.5 ? 300 + Math.random() * 60 : Math.random() * 30}, 100%, 60%)`, // Pink/magenta or orange
+        life: 25,
+        maxLife: 25,
+        size: Math.random() * 1 + 0.8,
+        color: `hsl(${Math.random() < 0.7 ? 280 + Math.random() * 40 : 40 + Math.random() * 20}, 50%, 70%)`, // Soft purple or warm orange
         type: 'death',
-        glowIntensity: 12,
+        glowIntensity: 6,
         trail: []
       });
     }
@@ -77,10 +77,10 @@ export const useParticleSystem = (canvasRef: React.RefObject<HTMLCanvasElement>)
     particlesRef.current = particlesRef.current.filter(particle => {
       particle.life--;
       
-      // Update trail for cyberpunk effect
+      // Update trail for zen effect (shorter trails for performance)
       if (particle.trail) {
         particle.trail.unshift({ x: particle.x, y: particle.y, alpha: particle.life / particle.maxLife });
-        if (particle.trail.length > 5) {
+        if (particle.trail.length > 3) {
           particle.trail.pop();
         }
       }
@@ -88,83 +88,56 @@ export const useParticleSystem = (canvasRef: React.RefObject<HTMLCanvasElement>)
       particle.x += particle.vx;
       particle.y += particle.vy;
       
-      // Different physics for different types
+      // Zen physics - gentle movement
       if (particle.type === 'death') {
-        particle.vy += 0.05; // Lighter gravity
-        particle.vx *= 0.99; // Less air resistance
+        particle.vy += 0.02; // Very light gravity
+        particle.vx *= 0.98;
       } else {
-        particle.vx *= 0.95; // More friction for birth particles
-        particle.vy *= 0.95;
+        particle.vx *= 0.96; // Gentle friction
+        particle.vy *= 0.96;
       }
       
       return particle.life > 0;
     });
 
-    // Clear canvas
+    // Clear canvas efficiently
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Render particles
+    // Batch render particles for performance
     particlesRef.current.forEach(particle => {
       const alpha = particle.life / particle.maxLife;
       ctx.save();
       
-      // Render trail first for cyberpunk effect
+      // Minimal trail for zen aesthetic
       if (particle.trail && particle.trail.length > 0) {
         particle.trail.forEach((point, index) => {
-          const trailAlpha = point.alpha * 0.3 * (1 - index / particle.trail.length);
+          const trailAlpha = point.alpha * 0.2 * (1 - index / particle.trail.length);
           ctx.globalAlpha = trailAlpha;
           ctx.fillStyle = particle.color;
           ctx.beginPath();
-          ctx.arc(point.x, point.y, particle.size * 0.5, 0, Math.PI * 2);
+          ctx.arc(point.x, point.y, particle.size * 0.3, 0, Math.PI * 2);
           ctx.fill();
         });
       }
       
-      // Enhanced cyberpunk particle rendering
+      // Zen particle rendering - soft and minimal
       ctx.globalAlpha = alpha;
+      ctx.shadowBlur = particle.glowIntensity || 6;
+      ctx.shadowColor = particle.color;
+      ctx.fillStyle = particle.color;
       
-      if (particle.type === 'birth') {
-        // Cyberpunk birth effect - sharp edges with strong glow
-        ctx.shadowBlur = particle.glowIntensity || 15;
-        ctx.shadowColor = particle.color;
-        ctx.fillStyle = particle.color;
-        
-        // Draw main particle
-        ctx.beginPath();
-        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Add center bright spot
-        ctx.shadowBlur = 5;
-        ctx.fillStyle = '#ffffff';
-        ctx.globalAlpha = alpha * 0.8;
-        ctx.beginPath();
-        ctx.arc(particle.x, particle.y, particle.size * 0.3, 0, Math.PI * 2);
-        ctx.fill();
-        
-      } else {
-        // Cyberpunk death effect - more angular with intense glow
-        ctx.shadowBlur = particle.glowIntensity || 12;
-        ctx.shadowColor = particle.color;
-        ctx.fillStyle = particle.color;
-        
-        // Draw diamond shape for more cyberpunk feel
-        ctx.beginPath();
-        ctx.moveTo(particle.x, particle.y - particle.size);
-        ctx.lineTo(particle.x + particle.size, particle.y);
-        ctx.lineTo(particle.x, particle.y + particle.size);
-        ctx.lineTo(particle.x - particle.size, particle.y);
-        ctx.closePath();
-        ctx.fill();
-        
-        // Add inner glow
-        ctx.globalAlpha = alpha * 0.6;
-        ctx.shadowBlur = 3;
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(particle.x, particle.y, particle.size * 0.2, 0, Math.PI * 2);
-        ctx.fill();
-      }
+      // Simple circle for all particles - zen simplicity
+      ctx.beginPath();
+      ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Subtle center highlight
+      ctx.globalAlpha = alpha * 0.4;
+      ctx.shadowBlur = 2;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.beginPath();
+      ctx.arc(particle.x, particle.y, particle.size * 0.4, 0, Math.PI * 2);
+      ctx.fill();
       
       ctx.restore();
     });
