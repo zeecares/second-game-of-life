@@ -449,7 +449,7 @@ export const GameOfLife = () => {
                 Drag patterns to place them on the grid
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3 max-h-96 overflow-y-auto">
+            <CardContent className="space-y-3 max-h-[600px] overflow-y-auto">
               {Object.entries(presets).map(([key, preset]) => (
                 <div key={key} className="space-y-2">
                   <Button
@@ -607,6 +607,13 @@ export const GameOfLife = () => {
                     {speed[0]}ms per generation
                   </p>
                 </div>
+
+                {/* Pattern Analysis */}
+                <PatternMetrics 
+                  metrics={metrics}
+                  historicalMatches={historicalMatches}
+                  history={history}
+                />
               </div>
             </CardContent>
           </Card>
@@ -710,13 +717,6 @@ export const GameOfLife = () => {
               </Button>
             </CardContent>
           </Card>
-
-          {/* Pattern Analysis */}
-          <PatternMetrics 
-            metrics={metrics}
-            historicalMatches={historicalMatches}
-            history={history}
-          />
 
         </div>
       </div>
