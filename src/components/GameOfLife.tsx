@@ -10,28 +10,28 @@ import { PatternMetrics } from '@/components/PatternMetrics';
 import { HeatMapOverlay } from '@/components/HeatMapOverlay';
 
 
-const GRID_SIZE = 50;
+const DEFAULT_GRID_SIZE = 25;
 
 type Grid = boolean[][];
 
-const createEmptyGrid = (): Grid => {
-  return Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(false));
+const createEmptyGrid = (size: number): Grid => {
+  return Array(size).fill(null).map(() => Array(size).fill(false));
 };
 
-const createRandomGrid = (): Grid => {
-  return Array(GRID_SIZE).fill(null).map(() => 
-    Array(GRID_SIZE).fill(null).map(() => Math.random() > 0.7)
+const createRandomGrid = (size: number): Grid => {
+  return Array(size).fill(null).map(() => 
+    Array(size).fill(null).map(() => Math.random() > 0.7)
   );
 };
 
-const countNeighbors = (grid: Grid, x: number, y: number): number => {
+const countNeighbors = (grid: Grid, x: number, y: number, gridSize: number): number => {
   let count = 0;
   for (let i = -1; i <= 1; i++) {
     for (let j = -1; j <= 1; j++) {
       if (i === 0 && j === 0) continue;
       const newX = x + i;
       const newY = y + j;
-      if (newX >= 0 && newX < GRID_SIZE && newY >= 0 && newY < GRID_SIZE) {
+      if (newX >= 0 && newX < gridSize && newY >= 0 && newY < gridSize) {
         if (grid[newX][newY]) count++;
       }
     }
@@ -39,11 +39,11 @@ const countNeighbors = (grid: Grid, x: number, y: number): number => {
   return count;
 };
 
-const getNextGeneration = (grid: Grid, rules: Rules): Grid => {
-  const newGrid = createEmptyGrid();
-  for (let x = 0; x < GRID_SIZE; x++) {
-    for (let y = 0; y < GRID_SIZE; y++) {
-      const neighbors = countNeighbors(grid, x, y);
+const getNextGeneration = (grid: Grid, rules: Rules, gridSize: number): Grid => {
+  const newGrid = createEmptyGrid(gridSize);
+  for (let x = 0; x < gridSize; x++) {
+    for (let y = 0; y < gridSize; y++) {
+      const neighbors = countNeighbors(grid, x, y, gridSize);
       if (grid[x][y]) {
         // Cell is alive
         newGrid[x][y] = neighbors >= rules.survivalMin && neighbors <= rules.survivalMax;
@@ -248,7 +248,8 @@ const createDrumSounds = () => {
 };
 
 export const GameOfLife = () => {
-  const [grid, setGrid] = useState<Grid>(createEmptyGrid);
+  const [gridSize, setGridSize] = useState(DEFAULT_GRID_SIZE);
+  const [grid, setGrid] = useState<Grid>(() => createEmptyGrid(DEFAULT_GRID_SIZE));
   const [isRunning, setIsRunning] = useState(false);
   const [generation, setGeneration] = useState(0);
   const [speed, setSpeed] = useState([200]);
@@ -281,14 +282,14 @@ export const GameOfLife = () => {
     if (!isRunning) return;
     
     setGrid(currentGrid => {
-      const newGrid = getNextGeneration(currentGrid, rules);
+      const newGrid = getNextGeneration(currentGrid, rules, gridSize);
       
       // Drum machine: trigger sounds based on grid patterns
       if (audioEnabled && drumSoundsRef.current) {
         // Sample different regions of the grid for different drum sounds
-        const kickRegion = newGrid.slice(0, 16);
-        const snareRegion = newGrid.slice(16, 32);
-        const hihatRegion = newGrid.slice(32, GRID_SIZE);
+        const kickRegion = newGrid.slice(0, Math.floor(gridSize / 3));
+        const snareRegion = newGrid.slice(Math.floor(gridSize / 3), Math.floor(2 * gridSize / 3));
+        const hihatRegion = newGrid.slice(Math.floor(2 * gridSize / 3), gridSize);
         
         // Count living cells in each region
         const kickCount = kickRegion.flat().filter(cell => cell).length;
@@ -310,7 +311,7 @@ export const GameOfLife = () => {
       return newGrid;
     });
     setGeneration(gen => gen + 1);
-  }, [isRunning, rules, audioEnabled]);
+  }, [isRunning, rules, audioEnabled, gridSize]);
 
   // Initialize audio context when enabled
   useEffect(() => {
@@ -354,9 +355,11 @@ export const GameOfLife = () => {
 
   const loadPreset = (preset: keyof typeof presets) => {
     if (isRunning) return;
-    const newGrid = createEmptyGrid();
+    const newGrid = createEmptyGrid(gridSize);
     presets[preset].pattern.forEach(([x, y]) => {
-      newGrid[x][y] = true;
+      if (x < gridSize && y < gridSize) {
+        newGrid[x][y] = true;
+      }
     });
     setGrid(newGrid);
     setGeneration(0);
@@ -372,7 +375,7 @@ export const GameOfLife = () => {
       const newX = x + px - Math.min(...pattern.map(p => p[0]));
       const newY = y + py - Math.min(...pattern.map(p => p[1]));
       
-      if (newX >= 0 && newX < GRID_SIZE && newY >= 0 && newY < GRID_SIZE) {
+      if (newX >= 0 && newX < gridSize && newY >= 0 && newY < gridSize) {
         newGrid[newX][newY] = true;
       }
     });
@@ -392,13 +395,20 @@ export const GameOfLife = () => {
 
   const reset = () => {
     setIsRunning(false);
-    setGrid(createEmptyGrid());
+    setGrid(createEmptyGrid(gridSize));
     setGeneration(0);
   };
 
   const randomize = () => {
     if (isRunning) return;
-    setGrid(createRandomGrid());
+    setGrid(createRandomGrid(gridSize));
+    setGeneration(0);
+  };
+
+  const changeGridSize = (newSize: number) => {
+    if (isRunning) return;
+    setGridSize(newSize);
+    setGrid(createEmptyGrid(newSize));
     setGeneration(0);
   };
 
@@ -460,8 +470,8 @@ export const GameOfLife = () => {
                 <div 
                   className="grid gap-[1px] bg-border p-2 rounded-lg"
                   style={{ 
-                    gridTemplateColumns: `repeat(${GRID_SIZE}, 8px)`,
-                    gridTemplateRows: `repeat(${GRID_SIZE}, 8px)`,
+                    gridTemplateColumns: `repeat(${gridSize}, 8px)`,
+                    gridTemplateRows: `repeat(${gridSize}, 8px)`,
                     width: 'fit-content'
                   }}
                   onDragOver={handleDragOver}
@@ -493,13 +503,13 @@ export const GameOfLife = () => {
                   </div>
                   <HeatMapOverlay
                     influence={metrics.influence}
-                    gridSize={GRID_SIZE}
+                    gridSize={gridSize}
                     cellSize={8}
                     enabled={heatMapEnabled}
                   />
                 </div>
 
-              <div className="flex flex-wrap gap-2 justify-center">
+              <div className="flex flex-wrap gap-2 justify-center mb-4">
                 <Button
                   onClick={() => setIsRunning(!isRunning)}
                   variant={isRunning ? "destructive" : "default"}
@@ -534,19 +544,42 @@ export const GameOfLife = () => {
                   </Button>
                 </div>
 
-              <div className="mt-4 space-y-2">
-                <label className="text-sm font-medium">Speed Control</label>
-                <Slider
-                  value={speed}
-                  onValueChange={setSpeed}
-                  max={500}
-                  min={50}
-                  step={50}
-                  className="w-full"
-                />
-                <p className="text-xs text-muted-foreground">
-                  {speed[0]}ms per generation
-                </p>
+              <div className="mt-4 space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Grid Size</label>
+                  <div className="flex gap-2">
+                    {[15, 25, 35, 50].map((size) => (
+                      <Button
+                        key={size}
+                        onClick={() => changeGridSize(size)}
+                        variant={gridSize === size ? "default" : "outline"}
+                        size="sm"
+                        disabled={isRunning}
+                        className="text-xs"
+                      >
+                        {size}×{size}
+                      </Button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Current: {gridSize}×{gridSize} grid
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Speed Control</label>
+                  <Slider
+                    value={speed}
+                    onValueChange={setSpeed}
+                    max={500}
+                    min={50}
+                    step={50}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {speed[0]}ms per generation
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
