@@ -71,6 +71,8 @@ export const usePatternAnalysis = (
     influence: []
   });
   const [historicalMatches, setHistoricalMatches] = useState<HistoricalPattern[]>([]);
+  const [aiDescription, setAiDescription] = useState<string>('');
+  const [generatedName, setGeneratedName] = useState<string>('');
 
   // Update history
   useEffect(() => {
@@ -216,9 +218,49 @@ export const usePatternAnalysis = (
     });
   }, [calculateEntropy, calculateDiversity, calculateStability, calculateGrowth, calculateInfluence]);
 
+  // Generate AI description and name
+  useEffect(() => {
+    if (generation < 5) return;
+    
+    const patterns = ['stable', 'oscillating', 'growing', 'declining', 'chaotic'];
+    const behaviors = ['steady', 'pulsing', 'expanding', 'contracting', 'unpredictable'];
+    const descriptors = ['elegant', 'complex', 'simple', 'intricate', 'balanced'];
+    
+    let behaviorType = '';
+    let description = '';
+    let name = '';
+    
+    if (metrics.stability > 0.8) {
+      behaviorType = 'stable';
+      description = `This ${descriptors[Math.floor(Math.random() * descriptors.length)]} pattern has achieved remarkable stability with ${(metrics.stability * 100).toFixed(0)}% consistency. The configuration maintains its structure across generations, suggesting a well-balanced ecosystem.`;
+      name = `${['Stable', 'Steady', 'Balanced'][Math.floor(Math.random() * 3)]} Formation`;
+    } else if (Math.abs(metrics.growth) > 0.3) {
+      behaviorType = metrics.growth > 0 ? 'growing' : 'declining';
+      const trend = metrics.growth > 0 ? 'expansion' : 'contraction';
+      description = `An ${descriptors[Math.floor(Math.random() * descriptors.length)]} pattern showing ${trend} behavior. Population ${metrics.growth > 0 ? 'increases' : 'decreases'} by approximately ${Math.abs(metrics.growth * 100).toFixed(1)}% per generation, indicating ${metrics.growth > 0 ? 'favorable' : 'challenging'} conditions.`;
+      name = `${metrics.growth > 0 ? 'Expanding' : 'Contracting'} ${['Colony', 'Cluster', 'Formation'][Math.floor(Math.random() * 3)]}`;
+    } else if (metrics.diversity > 0.6) {
+      behaviorType = 'complex';
+      description = `A highly ${descriptors[Math.floor(Math.random() * descriptors.length)]} pattern with ${(metrics.diversity * 100).toFixed(0)}% structural diversity. Multiple distinct clusters interact dynamically, creating emergent behaviors typical of complex adaptive systems.`;
+      name = `${['Complex', 'Diverse', 'Multi'][Math.floor(Math.random() * 3)]} ${['System', 'Network', 'Assembly'][Math.floor(Math.random() * 3)]}`;
+    } else if (metrics.entropy > 0.7) {
+      behaviorType = 'chaotic';
+      description = `A ${descriptors[Math.floor(Math.random() * descriptors.length)]} chaotic pattern with high entropy (${metrics.entropy.toFixed(2)}). The unpredictable evolution suggests sensitivity to initial conditions, a hallmark of deterministic chaos.`;
+      name = `${['Chaotic', 'Random', 'Turbulent'][Math.floor(Math.random() * 3)]} ${['Field', 'Storm', 'Flux'][Math.floor(Math.random() * 3)]}`;
+    } else {
+      description = `A ${descriptors[Math.floor(Math.random() * descriptors.length)]} pattern in transition. With moderate stability and growth rates, this configuration represents the dynamic equilibrium often seen in evolving systems.`;
+      name = `${['Transitional', 'Evolving', 'Dynamic'][Math.floor(Math.random() * 3)]} ${['Pattern', 'Structure', 'Form'][Math.floor(Math.random() * 3)]}`;
+    }
+    
+    setAiDescription(description);
+    setGeneratedName(name);
+  }, [metrics, generation]);
+
   return {
     metrics,
     historicalMatches,
-    history: history.slice(-20)
+    history: history.slice(-20),
+    aiDescription,
+    generatedName
   };
 };
