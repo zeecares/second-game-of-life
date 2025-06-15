@@ -69,21 +69,34 @@ export const useChiptuneSequencer = (
         
       case 'piano':
         oscillator.type = 'sine';
-        const harmonic = audioContextRef.current.createOscillator();
-        const harmonicGain = audioContextRef.current.createGain();
-        harmonic.connect(harmonicGain);
-        harmonicGain.connect(gainNode);
+        // Create piano-like harmonic overtones
+        const harmonic2 = audioContextRef.current.createOscillator();
+        const harmonic3 = audioContextRef.current.createOscillator();
+        const harmonicGain2 = audioContextRef.current.createGain();
+        const harmonicGain3 = audioContextRef.current.createGain();
         
-        harmonic.frequency.setValueAtTime(frequency * 2, audioContextRef.current.currentTime);
-        harmonic.type = 'sine';
-        harmonicGain.gain.setValueAtTime(0.1, audioContextRef.current.currentTime);
+        harmonic2.connect(harmonicGain2);
+        harmonic3.connect(harmonicGain3);
+        harmonicGain2.connect(gainNode);
+        harmonicGain3.connect(gainNode);
         
+        // Piano harmonics
+        harmonic2.frequency.setValueAtTime(frequency * 2, audioContextRef.current.currentTime);
+        harmonic3.frequency.setValueAtTime(frequency * 3, audioContextRef.current.currentTime);
+        harmonic2.type = 'sine';
+        harmonic3.type = 'sine';
+        harmonicGain2.gain.setValueAtTime(0.15, audioContextRef.current.currentTime);
+        harmonicGain3.gain.setValueAtTime(0.08, audioContextRef.current.currentTime);
+        
+        // Piano-like envelope - quick attack, slow decay
         gainNode.gain.setValueAtTime(0, audioContextRef.current.currentTime);
-        gainNode.gain.linearRampToValueAtTime(0.5, audioContextRef.current.currentTime + 0.02);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current.currentTime + duration * 2);
+        gainNode.gain.linearRampToValueAtTime(0.4, audioContextRef.current.currentTime + 0.01);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current.currentTime + duration * 3);
         
-        harmonic.start(audioContextRef.current.currentTime);
-        harmonic.stop(audioContextRef.current.currentTime + duration * 2);
+        harmonic2.start(audioContextRef.current.currentTime);
+        harmonic3.start(audioContextRef.current.currentTime);
+        harmonic2.stop(audioContextRef.current.currentTime + duration * 3);
+        harmonic3.stop(audioContextRef.current.currentTime + duration * 3);
         break;
         
       case 'trap':

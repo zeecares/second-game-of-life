@@ -293,8 +293,8 @@ export const GameOfLife = () => {
         }
       }
       
-      // Drum machine: trigger sounds based on grid patterns
-      if (audioEnabled && drumSoundsRef.current) {
+      // Drum machine: only for trap style, others are pure melodic
+      if (audioEnabled && drumSoundsRef.current && soundStyle === 'trap') {
         // Sample different regions of the grid for different drum sounds
         const kickRegion = newGrid.slice(0, 16);
         const snareRegion = newGrid.slice(16, 32);
@@ -630,30 +630,29 @@ export const GameOfLife = () => {
             </CardContent>
           </Card>
 
-           {/* Drum Machine */}
+           {/* Sound Trigger Logic */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 {audioEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
-                Drum Machine
+                Sound Logic
               </CardTitle>
               <CardDescription>
-                Grid patterns generate beats in real-time
+                How the grid triggers audio
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="text-xs text-muted-foreground space-y-1">
-                <div className="flex justify-between">
-                  <span>Kick (rows 1-16):</span>
-                  <span>Every 4th cell count</span>
+              <div className="text-xs text-muted-foreground space-y-2">
+                <div>
+                  <strong>Chiptune/8-Bit/Piano:</strong> Pure melodic sequencer - each column plays notes as cursor moves left to right. Each row maps to a pentatonic scale note.
                 </div>
-                <div className="flex justify-between">
-                  <span>Snare (rows 17-32):</span>
-                  <span>Every 6th cell count</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Hi-hat (rows 33-50):</span>
-                  <span>Every 2nd cell count</span>
+                <div>
+                  <strong>Trap:</strong> Melodic sequencer + drum machine:
+                  <ul className="ml-4 mt-1 space-y-1 list-disc">
+                    <li>Kick (rows 1-16): Every 4th cell count</li>
+                    <li>Snare (rows 17-32): Every 6th cell count</li>
+                    <li>Hi-hat (rows 33-50): Every 2nd cell count</li>
+                  </ul>
                 </div>
               </div>
             </CardContent>

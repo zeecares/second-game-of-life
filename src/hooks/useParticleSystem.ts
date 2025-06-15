@@ -20,50 +20,41 @@ export const useParticleSystem = (canvasRef: React.RefObject<HTMLCanvasElement>)
   const animationFrameRef = useRef<number>();
 
   const createBirthParticles = useCallback((x: number, y: number) => {
-    const particles: Particle[] = [];
-    // Minimal zen particles for smooth performance
-    for (let i = 0; i < 2; i++) {
-      const angle = (i / 2) * Math.PI * 2 + Math.random() * 0.5;
-      particles.push({
-        id: `birth-${Date.now()}-${i}`,
-        x: x + 4,
-        y: y + 4,
-        vx: Math.cos(angle) * 0.8,
-        vy: Math.sin(angle) * 0.8,
-        life: 20,
-        maxLife: 20,
-        size: 1.2,
-        color: `hsl(${160 + Math.random() * 40}, 60%, 75%)`, // Soft teal to blue
-        type: 'birth',
-        glowIntensity: 8,
-        trail: []
-      });
-    }
-    particlesRef.current.push(...particles);
+    // Ultra-minimal: single subtle particle
+    const particle: Particle = {
+      id: `birth-${Date.now()}`,
+      x: x + 4,
+      y: y + 4,
+      vx: 0,
+      vy: -0.3,
+      life: 15,
+      maxLife: 15,
+      size: 0.8,
+      color: 'hsl(200, 30%, 85%)', // Very subtle light blue
+      type: 'birth',
+      glowIntensity: 2,
+      trail: []
+    };
+    particlesRef.current.push(particle);
   }, []);
 
   const createDeathParticles = useCallback((x: number, y: number) => {
-    const particles: Particle[] = [];
-    // Minimal zen death particles
-    for (let i = 0; i < 3; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = Math.random() * 1.2 + 0.3;
-      particles.push({
-        id: `death-${Date.now()}-${i}`,
-        x: x + 4,
-        y: y + 4,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        life: 25,
-        maxLife: 25,
-        size: Math.random() * 1 + 0.8,
-        color: `hsl(${Math.random() < 0.7 ? 280 + Math.random() * 40 : 40 + Math.random() * 20}, 50%, 70%)`, // Soft purple or warm orange
-        type: 'death',
-        glowIntensity: 6,
-        trail: []
-      });
-    }
-    particlesRef.current.push(...particles);
+    // Ultra-minimal: single fading particle
+    const particle: Particle = {
+      id: `death-${Date.now()}`,
+      x: x + 4,
+      y: y + 4,
+      vx: 0,
+      vy: 0.2,
+      life: 12,
+      maxLife: 12,
+      size: 0.6,
+      color: 'hsl(0, 20%, 70%)', // Very subtle warm gray
+      type: 'death',
+      glowIntensity: 1,
+      trail: []
+    };
+    particlesRef.current.push(particle);
   }, []);
 
   const updateAndRenderParticles = useCallback(() => {
@@ -108,35 +99,14 @@ export const useParticleSystem = (canvasRef: React.RefObject<HTMLCanvasElement>)
       const alpha = particle.life / particle.maxLife;
       ctx.save();
       
-      // Minimal trail for zen aesthetic
-      if (particle.trail && particle.trail.length > 0) {
-        particle.trail.forEach((point, index) => {
-          const trailAlpha = point.alpha * 0.2 * (1 - index / particle.trail.length);
-          ctx.globalAlpha = trailAlpha;
-          ctx.fillStyle = particle.color;
-          ctx.beginPath();
-          ctx.arc(point.x, point.y, particle.size * 0.3, 0, Math.PI * 2);
-          ctx.fill();
-        });
-      }
-      
-      // Zen particle rendering - soft and minimal
-      ctx.globalAlpha = alpha;
-      ctx.shadowBlur = particle.glowIntensity || 6;
-      ctx.shadowColor = particle.color;
+      // Ultra-minimalist rendering - pure simplicity
+      ctx.globalAlpha = alpha * 0.6;
+      ctx.shadowBlur = 0; // No glow for pure minimalism
       ctx.fillStyle = particle.color;
       
-      // Simple circle for all particles - zen simplicity
+      // Tiny simple dot
       ctx.beginPath();
       ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-      ctx.fill();
-      
-      // Subtle center highlight
-      ctx.globalAlpha = alpha * 0.4;
-      ctx.shadowBlur = 2;
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-      ctx.beginPath();
-      ctx.arc(particle.x, particle.y, particle.size * 0.4, 0, Math.PI * 2);
       ctx.fill();
       
       ctx.restore();
