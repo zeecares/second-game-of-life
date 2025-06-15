@@ -263,9 +263,40 @@ export const GameOfLife = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="flex gap-6">
+        {/* Classic Patterns Sidebar */}
+        <div className="w-64 flex-shrink-0">
+          <Card>
+            <CardHeader>
+              <CardTitle>Classic Patterns</CardTitle>
+              <CardDescription>
+                Drag patterns to place them on the grid
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 max-h-96 overflow-y-auto">
+              {Object.entries(presets).map(([key, preset]) => (
+                <div key={key} className="space-y-2">
+                  <Button
+                    onClick={() => loadPreset(key as keyof typeof presets)}
+                    variant="outline"
+                    className="w-full cursor-grab active:cursor-grabbing"
+                    disabled={isRunning}
+                    draggable={!isRunning}
+                    onDragStart={() => handleDragStart(key)}
+                  >
+                    {preset.name}
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    {preset.description}
+                  </p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Game Grid */}
-        <div className="lg:col-span-2">
+        <div className="flex-1">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -279,17 +310,18 @@ export const GameOfLife = () => {
             <CardContent>
               <div className="flex justify-center mb-4">
                 <div 
-                  className="grid gap-px bg-border p-2 rounded-lg"
+                  className="grid gap-[1px] bg-border p-2 rounded-lg"
                   style={{ 
-                    gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))`,
+                    gridTemplateColumns: `repeat(${GRID_SIZE}, 8px)`,
+                    gridTemplateRows: `repeat(${GRID_SIZE}, 8px)`,
                     width: 'fit-content'
                   }}
                   onDragOver={handleDragOver}
                   onDrop={(e) => {
                     e.preventDefault();
                     const rect = e.currentTarget.getBoundingClientRect();
-                    const x = Math.floor((e.clientY - rect.top - 8) / 17);
-                    const y = Math.floor((e.clientX - rect.left - 8) / 17);
+                    const x = Math.floor((e.clientY - rect.top - 8) / 9);
+                    const y = Math.floor((e.clientX - rect.left - 8) / 9);
                     dropPattern(x, y);
                   }}
                 >
@@ -297,10 +329,10 @@ export const GameOfLife = () => {
                     row.map((cell, y) => (
                       <div
                         key={`${x}-${y}`}
-                        className={`w-4 h-4 cursor-pointer transition-colors ${
+                        className={`w-2 h-2 cursor-pointer transition-colors ${
                           cell 
                             ? 'bg-primary hover:bg-primary/80' 
-                            : 'bg-background hover:bg-muted'
+                            : 'bg-background hover:bg-muted border border-border/20'
                         }`}
                         onClick={() => toggleCell(x, y)}
                       />
@@ -347,7 +379,7 @@ export const GameOfLife = () => {
         </div>
 
         {/* Controls and Info */}
-        <div className="space-y-6">
+        <div className="w-64 flex-shrink-0 space-y-6">
           {/* Stats */}
           <Card>
             <CardHeader>
@@ -362,35 +394,6 @@ export const GameOfLife = () => {
                 <span>Population:</span>
                 <Badge variant="secondary">{population}</Badge>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Presets */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Classic Patterns</CardTitle>
-             <CardDescription>
-                 Click to load patterns instantly, or drag them to place anywhere on the grid
-               </CardDescription>
-             </CardHeader>
-             <CardContent className="space-y-3">
-               {Object.entries(presets).map(([key, preset]) => (
-                 <div key={key} className="space-y-2">
-                   <Button
-                     onClick={() => loadPreset(key as keyof typeof presets)}
-                     variant="outline"
-                     className="w-full cursor-grab active:cursor-grabbing"
-                     disabled={isRunning}
-                     draggable={!isRunning}
-                     onDragStart={() => handleDragStart(key)}
-                   >
-                     {preset.name}
-                   </Button>
-                  <p className="text-xs text-muted-foreground">
-                    {preset.description}
-                  </p>
-                </div>
-              ))}
             </CardContent>
           </Card>
 
