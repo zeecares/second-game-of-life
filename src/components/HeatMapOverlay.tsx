@@ -54,7 +54,7 @@ export const HeatMapOverlay: React.FC<HeatMapOverlayProps> = ({
 
           ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
           ctx.fillRect(
-            y * (cellSize + 1), // Remove the offset - align with grid cells
+            y * (cellSize + 1),
             x * (cellSize + 1),
             cellSize,
             cellSize
@@ -62,17 +62,25 @@ export const HeatMapOverlay: React.FC<HeatMapOverlayProps> = ({
         }
       }
     }
-  }, [influence, enabled, cellSize]);
+  }, [influence, enabled, cellSize, gridSize]);
 
   if (!enabled) return null;
+
+  // Calculate the total grid dimensions including gaps and padding
+  const totalGridWidth = gridSize * (cellSize + 1);
+  const totalGridHeight = gridSize * (cellSize + 1);
 
   return (
     <canvas
       ref={canvasRef}
-      width={gridSize * (cellSize + 1)}
-      height={gridSize * (cellSize + 1)}
-      className="absolute top-2 left-2 pointer-events-none"
-      style={{ mixBlendMode: 'multiply' }}
+      width={totalGridWidth}
+      height={totalGridHeight}
+      className="absolute pointer-events-none"
+      style={{ 
+        mixBlendMode: 'multiply',
+        top: '8px', // Match the grid padding
+        left: '8px' // Match the grid padding
+      }}
     />
   );
 };
