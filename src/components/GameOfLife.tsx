@@ -3,8 +3,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
-import { Play, Pause, RotateCcw, Zap, Brain, MessageSquare, Volume2, VolumeX, Music } from 'lucide-react';
+import { Play, Pause, RotateCcw, Zap, Brain, MessageSquare, Volume2, VolumeX, Music, Thermometer } from 'lucide-react';
 import { useChiptuneSequencer } from '@/hooks/useChiptuneSequencer';
+import { usePatternAnalysis } from '@/hooks/usePatternAnalysis';
+import { PatternMetrics } from '@/components/PatternMetrics';
+import { HeatMapOverlay } from '@/components/HeatMapOverlay';
 
 
 const GRID_SIZE = 50;
@@ -254,6 +257,7 @@ export const GameOfLife = () => {
   const [rules, setRules] = useState<Rules>(defaultRules);
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [soundStyle, setSoundStyle] = useState<'chiptune' | '8bit' | 'piano' | 'trap'>('chiptune');
+  const [heatMapEnabled, setHeatMapEnabled] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout>();
   const drumSoundsRef = useRef<ReturnType<typeof createDrumSounds> | null>(null);
 
@@ -264,6 +268,13 @@ export const GameOfLife = () => {
     speed[0],
     audioEnabled,
     soundStyle
+  );
+
+  // Pattern analysis hook
+  const { metrics, historicalMatches, history } = usePatternAnalysis(
+    grid,
+    generation,
+    population
   );
 
   const runSimulation = useCallback(() => {
@@ -479,8 +490,14 @@ export const GameOfLife = () => {
                        />
                      ))
                    )}
-                 </div>
-               </div>
+                  </div>
+                  <HeatMapOverlay
+                    influence={metrics.influence}
+                    gridSize={GRID_SIZE}
+                    cellSize={8}
+                    enabled={heatMapEnabled}
+                  />
+                </div>
 
               <div className="flex flex-wrap gap-2 justify-center">
                 <Button
@@ -499,15 +516,23 @@ export const GameOfLife = () => {
                   <Zap className="h-4 w-4" />
                   Random
                 </Button>
-                 <Button
-                   onClick={() => setAudioEnabled(!audioEnabled)}
-                   variant="outline"
-                   className="flex items-center gap-2"
-                 >
-                   {audioEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-                   {audioEnabled ? 'Audio On' : 'Audio Off'}
-                 </Button>
-               </div>
+                  <Button
+                    onClick={() => setAudioEnabled(!audioEnabled)}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    {audioEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                    {audioEnabled ? 'Audio On' : 'Audio Off'}
+                  </Button>
+                  <Button
+                    onClick={() => setHeatMapEnabled(!heatMapEnabled)}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <Thermometer className="h-4 w-4" />
+                    {heatMapEnabled ? 'Heat Map On' : 'Heat Map Off'}
+                  </Button>
+                </div>
 
               <div className="mt-4 space-y-2">
                 <label className="text-sm font-medium">Speed Control</label>
@@ -683,7 +708,14 @@ export const GameOfLife = () => {
                 Reset to Conway's Rules
               </Button>
             </CardContent>
-          </Card>
+           </Card>
+
+          {/* Pattern Analysis Components */}
+          <PatternMetrics 
+            metrics={metrics}
+            historicalMatches={historicalMatches}
+            history={history}
+          />
 
         </div>
       </div>
