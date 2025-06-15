@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -546,6 +547,7 @@ export const GameOfLife = () => {
                       enabled={heatMapEnabled}
                     />
                   </div>
+                </div>
               )}
               
               <div className="flex flex-wrap gap-2 justify-center mb-4">
