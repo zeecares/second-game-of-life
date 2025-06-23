@@ -13,7 +13,7 @@ import { ShareModal } from '@/components/ShareModal';
 import { Grid3D } from '@/components/Grid3D';
 import { EvolutionCompetition } from '@/components/EvolutionCompetition';
 
-const DEFAULT_GRID_SIZE = 25;
+const DEFAULT_GRID_SIZE = 35; // Increased from 25
 
 type Grid = boolean[][];
 
@@ -252,7 +252,7 @@ const createDrumSounds = () => {
 
 export const GameOfLife = () => {
   const [gridSize, setGridSize] = useState(DEFAULT_GRID_SIZE);
-  const [grid, setGrid] = useState<Grid>(() => createEmptyGrid(DEFAULT_GRID_SIZE));
+  const [grid, setGrid] = useState<Grid>(() => createRandomGrid(DEFAULT_GRID_SIZE)); // Initialize with random grid
   const [isRunning, setIsRunning] = useState(false);
   const [generation, setGeneration] = useState(0);
   const [speed, setSpeed] = useState([300]); // Changed default to middle value
@@ -484,12 +484,12 @@ export const GameOfLife = () => {
   const changeGridSize = (newSize: number) => {
     if (isRunning) return;
     setGridSize(newSize);
-    setGrid(createEmptyGrid(newSize));
+    setGrid(createRandomGrid(newSize)); // Start with random grid instead of empty
     setGeneration(0);
   };
 
   // Calculate dynamic cell size to maintain consistent overall dimensions
-  const TOTAL_GRID_SIZE = 600; // Pixels for larger grid
+  const TOTAL_GRID_SIZE = 800; // Increased from 600 for larger grid
   const cellSize = Math.floor(TOTAL_GRID_SIZE / gridSize) - 1; // Subtract 1 for gap
 
   return (
@@ -503,8 +503,8 @@ export const GameOfLife = () => {
 
       {/* Mobile-first responsive layout */}
       <div className="flex flex-col lg:flex-row gap-3 lg:gap-6">
-        {/* Game Grid - Always first on mobile, 70% width on desktop */}
-        <div className="w-full lg:w-[70%] order-1">
+        {/* Game Grid - Always first on mobile, 80% width on desktop (increased from 70%) */}
+        <div className="w-full lg:w-[80%] order-1">
           <Card>
             <CardHeader className="p-3 sm:p-6">
               <CardTitle className="flex items-center gap-2 text-base sm:text-lg lg:text-xl">
@@ -512,7 +512,7 @@ export const GameOfLife = () => {
                 The Game Grid
               </CardTitle>
                <CardDescription className="text-xs sm:text-sm">
-                 Click cells to toggle them, or drag patterns from the sidebar to place them anywhere on the grid
+                 Click cells to toggle them, or drag patterns from the sidebar. Click Play to start!
                </CardDescription>
             </CardHeader>
             <CardContent className="p-3 sm:p-6">
@@ -641,7 +641,7 @@ export const GameOfLife = () => {
                 <div className="space-y-2">
                   <label className="text-xs sm:text-sm font-medium">Grid Size</label>
                   <div className="flex gap-1 sm:gap-2">
-                    {[15, 25, 35, 50].map((size) => (
+                    {[25, 35, 50, 70].map((size) => (
                       <Button
                         key={size}
                         onClick={() => changeGridSize(size)}
@@ -679,8 +679,8 @@ export const GameOfLife = () => {
           </Card>
         </div>
 
-        {/* Right sidebar - Controls and Patterns */}
-        <div className="w-full lg:w-[30%] flex flex-col gap-3 lg:gap-4 order-2">
+        {/* Right sidebar - Controls and Patterns - 20% width on desktop (decreased from 30%) */}
+        <div className="w-full lg:w-[20%] flex flex-col gap-3 lg:gap-4 order-2">
           {/* Stats & Audio Controls */}
           <Card>
             <CardHeader className="p-3 sm:pb-3">
